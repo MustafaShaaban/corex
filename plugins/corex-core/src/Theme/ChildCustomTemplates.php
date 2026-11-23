@@ -19,11 +19,12 @@ defined('ABSPATH') || exit;
  * WordPress merges the two `customTemplates` lists by position: the child's entry i is written over
  * the parent's entry i, key by key. A child that lists only its own template would so take the
  * place of CoreX's first one, and its title. On `wp_theme_json_data_theme`, which hands over the
- * child's own data before the parent's is merged in, the list becomes CoreX's entries in CoreX's
- * order (the child's own entry in place of a CoreX one it names), then the child's other entries.
- * CoreX's entries go first because each then lands on the parent's entry of the same name, and the
- * child's new ones land past the parent's list, where they take no key they omit from a CoreX entry.
- * A child that declares no list is left alone: it inherits CoreX's as before.
+ * child's own data before the parent's is merged in, the list becomes one entry per CoreX entry in
+ * CoreX's order, then the child's other entries. In a CoreX place the child names, its own entry
+ * stands whole; in one it does not, only the name, so the merge keeps the CoreX theme's title, as
+ * WordPress translated it in CoreX's text domain, and its post types. The child's new entries land
+ * past the parent's list, where they take no key they omit from a CoreX entry. A child that declares
+ * no list is left alone: it inherits CoreX's as before.
  */
 final class ChildCustomTemplates
 {
@@ -52,8 +53,8 @@ final class ChildCustomTemplates
     }
 
     /**
-     * CoreX's entries in CoreX's order, each replaced by the child's entry of the same name if it
-     * has one, then the child's entries CoreX does not have, in the child's order.
+     * One entry per CoreX entry in CoreX's order (the child's entry of the same name if it has one,
+     * else only CoreX's name), then the child's entries CoreX does not have, in the child's order.
      *
      * @param array<int, mixed> $own   The child's declared entries.
      * @param array<int, mixed> $corex The CoreX theme's entries.
@@ -73,10 +74,12 @@ final class ChildCustomTemplates
         $taken = [];
         foreach ($corex as $entry) {
             $name = self::nameOf($entry);
-            $completed[] = $name !== null && isset($byName[$name]) ? $byName[$name] : $entry;
-            if ($name !== null) {
-                $taken[$name] = true;
+            if ($name === null) {
+                $completed[] = $entry;
+                continue;
             }
+            $completed[] = $byName[$name] ?? ['name' => $name];
+            $taken[$name] = true;
         }
 
         foreach ($own as $entry) {

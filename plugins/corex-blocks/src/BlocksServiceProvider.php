@@ -48,6 +48,15 @@ final class BlocksServiceProvider extends ServiceProvider
             ),
         );
 
+        // The one public way to register a folder of blocks: CoreX's own and a site plugin's (spec 135, FR-032).
+        $this->container->singleton(
+            BlockFolder::class,
+            static fn (ContainerInterface $c): BlockFolder => new BlockFolder(
+                $c->make(BlockMap::class),
+                $c->make(DynamicBlockRegistrar::class),
+            ),
+        );
+
         $this->container->singleton(
             PluginRealpathRegistrar::class,
             static fn (ContainerInterface $c): PluginRealpathRegistrar => new PluginRealpathRegistrar(
@@ -82,13 +91,7 @@ final class BlocksServiceProvider extends ServiceProvider
         $this->container->make(SampleBlocks::class)->register();
 
         add_action('init', function (): void {
-            $registrar = $this->container->make(DynamicBlockRegistrar::class);
-            $built = dirname(__DIR__) . '/build/blocks';
-            $blocksDir = is_dir($built) ? $built : __DIR__ . '/blocks';
-
-            foreach ($this->container->make(BlockMap::class)->discover($blocksDir) as $block) {
-                $registrar->register($block);
-            }
+            $this->container->make(BlockFolder::class)->register(dirname(__DIR__) . '/build/blocks', __DIR__ . '/blocks');
         });
     }
 

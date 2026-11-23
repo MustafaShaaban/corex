@@ -99,8 +99,10 @@ file `corex-gap-programme-rules.md` (side-session notes of the Blackstone sessio
   on `main`: create `release/gap-line` from `v0.48.1`, cherry-pick the wave's squash commits in merge order, open
   one pull request into the line per spec, run `scripts/client-merge-check.mjs`, bump the version surfaces to
   0.49.0 on the line, move the wave's changelog lines into a `[0.49.0]` entry (on the line and on `main`), tag,
-  publish, and report the tag, the gaps and the client impact. (3) Spec 149 (lists, filters, carousel) may start
-  beside wave 1 when a session is free. (4) Wave 2: specs 138 to 143.
+  publish, and report the tag, the gaps and the client impact. (3) Spec 149 (G-008, G-010, G-012, then G-009) is
+  written and built next and ships as `v0.50.0` (DECISIONS #701); spec 137 adds slice 6, the header's scroll
+  distance, to `v0.49.0`. (4) Then `v0.51.0` specs 150 and 153, `v0.52.0` specs 138 to 143, `v0.53.0` specs 144 to
+  148, `v0.54.0` specs 151 and 152 (DECISIONS #701).
 - **Waiting on the owner, none of it blocking the slices nobody sees.** Approval of each design for a visible
   slice (the header system, the hero's media and second button, the pause controls, later the careers screens and
   the consent banner). His word on the reversals listed in CR-049's intake (`06-change-control/intake-2026-11-21.md`
@@ -116,21 +118,21 @@ file `corex-gap-programme-rules.md` (side-session notes of the Blackstone sessio
 | G-004 | High | Tabs, accordion, carousel, modal and drawer cannot hold blocks | 1 | 136 | 5 (accordion), 6a (tabs), 6b (tabs advance, waits on design D-1), 7 (carousel), 8 (modal and drawer, waits on design D-2) | | | spec written (DECISIONS #672, #675) |
 | G-005 | High | No renderer prints the block wrapper attributes (anchor, align, class) | 1 | 136 | 1 (anchor, alignment, class), 2a (margin, padding, colour), 2b (the bands on section blocks: rests on spec 134, which the line does not carry, so it lands on `main` and is not cherry-picked) | #496 (slice 1) | | slice 1 merged into `main` (`93bf6321`): anchor, alignment and class reach the page (DECISIONS #670, #676); 2a (margin, padding, colour; DECISIONS #680, rests on slice 3) in review; 2b to come |
 | G-006 | High | A generated client theme has no tokens, block styles or header system | 1 | 135 | 3, 4 | #504 (slice 3), #509 (slice 4) | | slice 3 merged into `main` (`1e6ca459`), rests on nothing the tag lacks; the child theme re-check passed (#660, #663). Slice 4 (the favicon under a child, FR-016): pull request open; rests on spec 134, on `main` only, not carried to the line |
-| G-007 | High | The generated site plugin boots nothing and cannot build a block | 1 | 135 | 5 | | | open: spec reviewed (#662) |
-| G-008 | High | List blocks read one post type, titles only, no picker | then | 149 | | | | open |
+| G-007 | High | The generated site plugin boots nothing and cannot build a block | 1 | 135 | 5 | #512 | | slice 5: pull request open (#662, #665, #666). Rests on nothing `main` gained after v0.48.1 that the tag lacks |
+| G-008 | High | List blocks read one post type, titles only, no picker | `v0.50.0` | 149 | | | | open: first after wave 1 (DECISIONS #701) |
 | G-009 | High | No visitor-side filters for a list | then | 149 | | | | open |
-| G-010 | High | Carousel: text slides, fixed timing, no ticker | then | 149 | | | | open |
+| G-010 | High | Carousel: text slides, fixed timing, no ticker | `v0.50.0` | 149 | | | | open: first after wave 1 (DECISIONS #701) |
 | G-011 | Medium | Hero: one button, no media background, lazy image | 1 | 136 | 9 (waits on design D-3) | | | spec written; the hero drawing (D-3) approved 2026-11-23 (DECISIONS #677, `design/handoffs/spec-136-hero.md`); slice 9 waits on slice 3 and on the design system gaining its scrim tokens and icons |
-| G-012 | Medium | No reveal on scroll, no count-up | then | 150 | | | | open |
+| G-012 | Medium | No reveal on scroll, no count-up | `v0.50.0` | 149 | | | | open: moved from spec 150 to 149, first after wave 1 (DECISIONS #701) |
 | G-013 | High | Header system: panels beside the menu, three breakpoints, no utility menu or language slot | 1 | 137 | spec written; five slices: 1 one width, 2 language switcher, 3 mega menu item, 4 phone menu, 5 utility menu, search and patterns | spec: #493 | | open: spec merged (`4d0a2b8d`); every drawing approved by the owner on 2026-11-22 (`design/handoffs/header-system.md`, DECISIONS #696); no slice built yet, building waits for a free slot (DECISIONS #690 to #696) |
-| G-014 | Medium | Breadcrumbs print Home and the title only | 3 | 144 | | | | open |
-| G-015 | Medium | No in-page section navigation | then | 150 | | | | open |
-| G-016 | Medium | Blocks print images with no `srcset` or size | then | 150 | | | | open |
-| G-017 | Medium | Article parts missing (reading time, contents, author box, related) | then | 150 | | | | open |
-| G-018 | Low | No pattern, template, post type or taxonomy generator | then | 151 | | | | open |
-| G-019 | Low | Copyright sentence cannot be edited | then | 150 | | | | open |
-| G-020 | Medium | No declarative post type, taxonomy and field registration | then | 151 | | | | open |
-| G-021 | Medium | Portfolio kit cannot be relabelled or reshaped | then | 151 | | | | open |
+| G-014 | Medium | Breadcrumbs print Home and the title only | `v0.51.0` | 150 | | | | open: the visible trail moved from spec 144 to 150; the `BreadcrumbList` data stays with 144 (DECISIONS #701) |
+| G-015 | Medium | No in-page section navigation | `v0.51.0` | 150 | | | | open (DECISIONS #701) |
+| G-016 | Medium | Blocks print images with no `srcset` or size | `v0.51.0` | 150 | | | | open (DECISIONS #701) |
+| G-017 | Medium | Article parts missing (reading time, contents, author box, related) | `v0.51.0` | 150 | | | | open (DECISIONS #701) |
+| G-018 | Low | No pattern, template, post type or taxonomy generator | `v0.54.0` | 151 | | | | open (DECISIONS #701) |
+| G-019 | Low | Copyright sentence cannot be edited | `v0.51.0` | 150 | | | | open (DECISIONS #701) |
+| G-020 | Medium | No declarative post type, taxonomy and field registration | `v0.54.0` | 151 | | | | open (DECISIONS #701) |
+| G-021 | Medium | Portfolio kit cannot be relabelled or reshaped | `v0.54.0` | 151 | | | | open (DECISIONS #701) |
 | G-022 | Medium | No people record | 2 | 143 | | | | open |
 | G-023 | Medium | Settings: no list type, no live binding (the admin field control knows `textarea` and `json`; no setting declares them) | 2 | 143 | | | | open |
 | G-024 | Medium | An editor-built form cannot take a file | 2 | 138 | | | | open |
@@ -155,8 +157,14 @@ file `corex-gap-programme-rules.md` (side-session notes of the Blackstone sessio
 | G-043 | Medium | The client site workflow has no speed, accessibility or secret checks | then | 152 | | | | open |
 | G-044 | Low | No uninstall routine | then | 152 | | | | open |
 | G-045 | Low | Docs describe an `I18nHandler` and an Interactivity rule the code does not have | then | 152 | | | | open |
+| G-046 | High | No role between Editor and Administrator for a marketing team (Site Editor for parts, menus and synced patterns only) | `v0.51.0` | 153 | | | | open (DECISIONS #701) |
+| G-047 | Medium | No editor profile per role and post type (core patterns, locking, code editor, allowed blocks) | `v0.51.0` | 153 | | | | open (DECISIONS #701) |
 | G-048 | High | A child of the CoreX theme cannot hide the parent's patterns and templates from the editor | 1 | 135 | 6 (after slice 5) | | | slice 6 built and in review (DECISIONS #664, #667); rests on nothing the tag lacks |
+| G-049 | Medium | A theme cannot ship synced patterns, menus or starter pages (`wp corex seed`) | `v0.51.0` | 153 | | | | open (DECISIONS #701) |
+| G-050 | Medium | No pattern parity check in the client workflow stub | `v0.51.0` | 153 | | | | open (DECISIONS #701) |
 | G-051 | High | The hero takes no child block, so a site block cannot sit inside its media and scrim | 1 | 136 | 9 (with G-011; waits on the addendum board D-3a; without it, its own slice after 9) | | | spec written (DECISIONS #679) |
+| G-052 | Medium | Repeatable items in a locked section, if content-only mode cannot add or reorder them (conditional) | `v0.51.0` | 153 | | | | open (DECISIONS #701) |
+| G-053 | Low | No pre-publish checks (alt text, sample text, empty required fields) | `v0.51.0` | 153 | | | | open (DECISIONS #701) |
 
 State is one of: open, specced (the spec is on `main`), built (every slice on `main`), released (in the tag
 named), not fixed (with the reason beside it). A row with two specs is released when both are.

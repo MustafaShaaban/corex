@@ -107,6 +107,8 @@ final class SiteScaffolder
         if (! $themeOnly) {
             $stubFiles[$pluginDir . '/' . $id->pluginSlug . '.php']              = 'site/plugin';
             $stubFiles[$pluginDir . '/src/' . $id->namespace . 'ServiceProvider.php'] = 'site/provider';
+            // spec 135, FR-034: the plugin builds its own blocks, from a clean install of its own folder.
+            $stubFiles[$pluginDir . '/package.json'] = 'site/plugin-package-json';
             foreach (['Models', 'Services', 'Controllers', 'Api', 'Blocks', 'Options'] as $folder) {
                 $literals[$pluginDir . '/src/' . $folder . '/.gitkeep'] = '';
             }
@@ -137,8 +139,7 @@ final class SiteScaffolder
 
         // --starter (spec 053 US4): the runnable example slice + the starter-theme assets.
         if ($starter && ! $themeOnly) {
-            // Swap the skeleton plugin + provider for versions that autoload and wire the example.
-            $stubFiles[$pluginDir . '/' . $id->pluginSlug . '.php']                   = 'starter/plugin';
+            // The same plugin file boots it (spec 135, FR-035); the provider also wires the example.
             $stubFiles[$pluginDir . '/src/' . $id->namespace . 'ServiceProvider.php'] = 'starter/provider';
             $stubFiles[$pluginDir . '/src/Models/Example.php']                        = 'starter/model';
             $stubFiles[$pluginDir . '/src/Repositories/ExampleRepository.php']        = 'starter/repository';

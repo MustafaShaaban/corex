@@ -10,20 +10,45 @@ namespace {{ namespace }};
 
 defined('ABSPATH') || exit;
 
+use Corex\Blocks\BlockFolder;
+use Corex\Container\ContainerInterface;
+
 /**
- * The {{ name }} site service provider — binds the site's services into Corex's container.
- * App code (Models/Services/Controllers/Api/Blocks/Options) lives under {{ namespace }}\.
- * REST namespace: {{ rest_namespace }}. Option/CPT prefix: {{ option_prefix }}.
+ * The {{ name }} site service provider: binds the site's services into CoreX's container and
+ * registers the site's blocks. The plugin file builds it with that container once CoreX is up.
+ *
+ * It is the site's own class and does not extend CoreX's ServiceProvider, whose lifecycle only
+ * reads CoreX's own providers. App code (Models/Services/Controllers/Api/Blocks/Options) lives
+ * under {{ namespace }}\. REST namespace: {{ rest_namespace }}. Option/CPT prefix: {{ option_prefix }}.
  */
 final class {{ namespace }}ServiceProvider
 {
+    public function __construct(private readonly ContainerInterface $container)
+    {
+    }
+
     public function register(): void
     {
-        // Bind your site's services here.
+        // Bind the site's services here, for example:
+        // $this->container->singleton(Services\QuoteService::class);
     }
 
     public function boot(): void
     {
-        // Wire hooks / routes here.
+        // Wire hooks and routes here.
+        add_action('init', [$this, 'registerBlocks']);
+    }
+
+    /**
+     * The site's blocks, one folder each with a block.json: from build/blocks once `npm run build`
+     * has run in this plugin, from src/Blocks before. Nothing when CoreX offers no block folder.
+     */
+    public function registerBlocks(): void
+    {
+        if (! $this->container->has(BlockFolder::class)) {
+            return;
+        }
+
+        $this->container->make(BlockFolder::class)->register(dirname(__DIR__) . '/build/blocks', __DIR__ . '/Blocks');
     }
 }

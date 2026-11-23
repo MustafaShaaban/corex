@@ -120,6 +120,11 @@ npm run build        # or: npm run start  (watch mode)
 
 Existing blocks are **skipped** unless `--force` is passed.
 
+In a client site (rule 2 above) the block goes into the site plugin, `sites/<client>/<slug>-site/src/Blocks/`,
+named `<slug>-site/<block>` and translated in the plugin's text domain. The plugin's provider registers every
+folder under `src/Blocks` that has a `block.json`, so the block is registered as soon as it is built, with
+`npm install && npm run build` in `sites/<client>/<slug>-site/`.
+
 ### `make:site` — scaffold a client site
 
 ```bash
@@ -131,6 +136,14 @@ Generates a complete **client site** under `--dir` (default: the current directo
 a site **plugin** (`acme-site/`, namespace `AcmeSite\`) and **theme** (`acme-theme/`) with the client's own
 prefixes (REST `acme/v1`, CSS `--acme-`, options `acme_`, all distinct from Corex), plus governance
 docs (`AGENTS.md`, `CLAUDE.md`, `README.md`, `PROGRESS.md`, `DECISIONS.md`, `.gitignore`, `specs/`, `docs/`).
+
+The plugin requires `corex-core` (`Requires Plugins: corex-core`), loads its namespace from `src/`, and boots
+its service provider through `Corex::onReady`, once, whichever of the two plugins WordPress loads first; with
+`corex-core` inactive it does nothing. The provider is the site's own class: it is handed CoreX's container, binds
+the site's services in `register()`, and in `boot()` registers the site's blocks on `init` through `corex-blocks`'
+`Corex\Blocks\BlockFolder` (from `build/blocks` once built, from `src/Blocks` before). The plugin's
+`package.json` builds `src/Blocks` to `build/blocks` with its own `@wordpress/scripts`, at the framework's range;
+a site with no block builds too. `--starter` uses the same plugin file and the same block route.
 
 The theme is a **child of the CoreX theme**. It gets three files (`--starter` adds its asset build): `style.css` (`Template: corex`), `theme.json`
 (every preset list of the CoreX theme's, its `settings.custom` and its `settings.layout`, with CoreX's values,

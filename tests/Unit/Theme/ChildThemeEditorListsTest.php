@@ -1,9 +1,9 @@
 <?php
 
 /**
- * What the editor of a child of the CoreX theme sees (spec 135, slice 6, G-048; DECISIONS #664):
- * the two switches a child sets in its own theme.json, the editor lists they shorten, and the
- * custom templates completed before WordPress merges them with the CoreX theme's.
+ * What the editor of a child of the CoreX theme sees (spec 135, slice 6, G-048; DECISIONS #664, #668):
+ * the patterns switch a child sets in its own theme.json, and the custom templates completed before
+ * WordPress merges them with the CoreX theme's.
  *
  * Headless: the theme folders are temporary directories and WordPress's theme functions are
  * stubbed to name them. The integration suite proves the same against a real WordPress.
@@ -16,7 +16,6 @@ declare(strict_types=1);
 use Brain\Monkey\Functions;
 use Corex\Theme\ChildCustomTemplates;
 use Corex\Theme\ChildThemeSwitches;
-use Corex\Theme\ParentTemplatesHider;
 
 /** A temporary theme folder holding the given files (relative path => contents). */
 function child_lists_theme_dir(array $files): string
@@ -60,7 +59,7 @@ afterEach(function () {
     $GLOBALS['corex_child_lists_dirs'] = [];
 });
 
-/** A theme.json that sets the two switches as given. */
+/** A theme.json that sets the switches as given. */
 function child_lists_theme_json(array $parent): string
 {
     return (string) json_encode(['version' => 3, 'settings' => ['custom' => ['corex' => ['parent' => $parent]]]]);
@@ -76,37 +75,26 @@ function child_lists_as(string $stylesheet, string $template, string $childDir, 
     Functions\when('wp_json_file_decode')->alias(
         static fn (string $file, array $options = []): mixed => json_decode((string) file_get_contents($file), true),
     );
-    Functions\when('get_block_theme_folders')->justReturn(['wp_template' => 'templates', 'wp_template_part' => 'parts']);
 }
 
-/** A template as WordPress's block template functions hand it over. */
-function child_lists_template(string $slug, string $source = 'theme', string $type = 'wp_template'): object
-{
-    return (object) ['slug' => $slug, 'source' => $source, 'type' => $type];
-}
-
-it('reads both switches from a child of the CoreX theme\'s own theme.json (FR-021, FR-022, FR-024)', function () {
-    $child = child_lists_theme_dir(['theme.json' => child_lists_theme_json(['hidePatterns' => true, 'hideTemplates' => true])]);
+it('reads hidePatterns from a child of the CoreX theme\'s own theme.json (FR-021, FR-024)', function () {
+    $child = child_lists_theme_dir(['theme.json' => child_lists_theme_json(['hidePatterns' => true])]);
     child_lists_as('acme-theme', 'corex', $child, child_lists_theme_dir([]));
 
-    $switches = new ChildThemeSwitches();
-
-    expect($switches->hides(ChildThemeSwitches::PATTERNS))->toBeTrue()
-        ->and($switches->hides(ChildThemeSwitches::TEMPLATES))->toBeTrue();
+    expect((new ChildThemeSwitches())->hides(ChildThemeSwitches::PATTERNS))->toBeTrue();
 });
 
-it('is off for a child that sets neither switch, or sets one to something other than true (FR-021, FR-022)', function () {
-    $child = child_lists_theme_dir(['theme.json' => child_lists_theme_json(['hidePatterns' => 'true'])]);
-    child_lists_as('acme-theme', 'corex', $child, child_lists_theme_dir([]));
+it('is off for a child that does not set hidePatterns, or sets it to something other than true (FR-021)', function () {
+    child_lists_as('acme-theme', 'corex', child_lists_theme_dir(['theme.json' => child_lists_theme_json(['hidePatterns' => 'true'])]), child_lists_theme_dir([]));
+    expect((new ChildThemeSwitches())->hides(ChildThemeSwitches::PATTERNS))->toBeFalse();
 
-    $switches = new ChildThemeSwitches();
-
-    expect($switches->hides(ChildThemeSwitches::PATTERNS))->toBeFalse()
-        ->and($switches->hides(ChildThemeSwitches::TEMPLATES))->toBeFalse();
+    // The withdrawn template switch turns nothing on (DECISIONS #668).
+    child_lists_as('acme-theme', 'corex', child_lists_theme_dir(['theme.json' => child_lists_theme_json(['hideTemplates' => true])]), child_lists_theme_dir([]));
+    expect((new ChildThemeSwitches())->hides(ChildThemeSwitches::PATTERNS))->toBeFalse();
 });
 
 it('never turns on from the CoreX theme\'s own theme.json, active or as the parent (FR-024)', function () {
-    $corex = child_lists_theme_dir(['theme.json' => child_lists_theme_json(['hidePatterns' => true, 'hideTemplates' => true])]);
+    $corex = child_lists_theme_dir(['theme.json' => child_lists_theme_json(['hidePatterns' => true])]);
 
     // The CoreX theme itself is active.
     child_lists_as('corex', 'corex', $corex, $corex);
@@ -114,11 +102,11 @@ it('never turns on from the CoreX theme\'s own theme.json, active or as the pare
 
     // A child with no theme.json of its own: WordPress would hand it the parent's file.
     child_lists_as('acme-theme', 'corex', child_lists_theme_dir([]), $corex);
-    expect((new ChildThemeSwitches())->hides(ChildThemeSwitches::TEMPLATES))->toBeFalse();
+    expect((new ChildThemeSwitches())->hides(ChildThemeSwitches::PATTERNS))->toBeFalse();
 });
 
 it('is off for a standalone theme and for a child of another theme, whatever their theme.json says (FR-021)', function () {
-    $own = child_lists_theme_dir(['theme.json' => child_lists_theme_json(['hidePatterns' => true, 'hideTemplates' => true])]);
+    $own = child_lists_theme_dir(['theme.json' => child_lists_theme_json(['hidePatterns' => true])]);
 
     child_lists_as('muva-theme', 'muva-theme', $own, $own);
     expect((new ChildThemeSwitches())->hides(ChildThemeSwitches::PATTERNS))->toBeFalse();
@@ -127,87 +115,44 @@ it('is off for a standalone theme and for a child of another theme, whatever the
     expect((new ChildThemeSwitches())->hides(ChildThemeSwitches::PATTERNS))->toBeFalse();
 });
 
-it('leaves out of the editor\'s lists a template only the CoreX theme has, and keeps the child\'s own (FR-022)', function () {
-    $child = child_lists_theme_dir([
-        'theme.json' => child_lists_theme_json(['hideTemplates' => true]),
-        'templates/front-page.html' => '<!-- wp:paragraph --><p>Acme</p><!-- /wp:paragraph -->',
-    ]);
-    $parent = child_lists_theme_dir([
-        'templates/front-page.html' => '',
-        'templates/index.html' => '',
-        'parts/header.html' => '',
-    ]);
-    child_lists_as('acme-theme', 'corex', $child, $parent);
-
-    $hider = new ParentTemplatesHider(new ChildThemeSwitches());
-    $templates = [
-        child_lists_template('front-page'),
-        child_lists_template('index'),
-        child_lists_template('index-edited', 'custom'),
-        child_lists_template('coming-soon', 'plugin'),
-    ];
-
-    expect(array_column($hider->withoutParentOnly($templates, [], 'wp_template'), 'slug'))
-        ->toBe(['front-page', 'index-edited', 'coming-soon'])
-        ->and($hider->withoutParentOnly([child_lists_template('header', 'theme', 'wp_template_part')], [], 'wp_template_part'))
-        ->toBe([]);
-});
-
-it('takes a template only the CoreX theme has out of the page template choices, but never the page\'s own (FR-022)', function () {
-    $child = child_lists_theme_dir([
-        'theme.json' => child_lists_theme_json(['hideTemplates' => true]),
-        'templates/page-acme.html' => '',
-    ]);
-    $parent = child_lists_theme_dir(['templates/page-landing.html' => '', 'templates/page-contact.html' => '']);
-    child_lists_as('acme-theme', 'corex', $child, $parent);
-
-    $hider = new ParentTemplatesHider(new ChildThemeSwitches());
-    $choices = ['page-landing' => 'Landing page', 'page-contact' => 'Contact page', 'page-acme' => 'Acme page'];
-
-    expect($hider->pickerChoices($choices, null, null))->toBe(['page-acme' => 'Acme page'])
-        // A page already drawn by Landing page keeps it among its choices, so saving it never resets it.
-        ->and($hider->pickerChoices($choices, null, (object) ['page_template' => 'page-landing']))
-        ->toBe(['page-landing' => 'Landing page', 'page-acme' => 'Acme page']);
-});
-
-it('changes no list without the switch (FR-022)', function () {
-    $child = child_lists_theme_dir(['theme.json' => child_lists_theme_json([])]);
-    $parent = child_lists_theme_dir(['templates/index.html' => '']);
-    child_lists_as('acme-theme', 'corex', $child, $parent);
-
-    $hider = new ParentTemplatesHider(new ChildThemeSwitches());
-    $templates = [child_lists_template('index')];
-
-    expect($hider->withoutParentOnly($templates, [], 'wp_template'))->toBe($templates)
-        ->and($hider->pickerChoices(['page-landing' => 'Landing page'], null, null))->toBe(['page-landing' => 'Landing page']);
-});
-
-/** The CoreX theme's six custom templates, as its theme.json lists them. */
+/** The CoreX theme's custom templates, as its theme.json lists them. */
 function child_lists_corex_custom_templates(): array
 {
     return json_decode((string) file_get_contents(dirname(__DIR__, 3) . '/theme/theme.json'), true)['customTemplates'];
 }
 
-it('completes a child\'s custom templates with every CoreX entry it does not name, in CoreX\'s order (FR-023)', function () {
+/** @return list<array{name: string}> Only the name of each CoreX entry, so WordPress's merge keeps the rest. */
+function child_lists_names_only(array $corex): array
+{
+    return array_map(static fn (array $entry): array => ['name' => $entry['name']], $corex);
+}
+
+it('completes a child\'s custom templates with a name-only entry for every CoreX one it does not name, in CoreX\'s order (FR-023)', function () {
     $corex = child_lists_corex_custom_templates();
     $own = ['name' => 'page-acme', 'title' => 'Acme page'];
 
     $completed = ChildCustomTemplates::complete([$own], $corex);
 
-    // CoreX's entries keep their places and the child's own come after them: WordPress merges the
-    // two lists by position, so an entry placed at a CoreX index would take keys it omits from it.
-    expect($completed)->toBe([...$corex, $own])
-        ->and(array_column($completed, 'name'))->toHaveCount(7);
+    // Each CoreX place holds only its name: WordPress merges the lists by position and key, so the
+    // CoreX theme's title (translated in its own text domain) and post types are kept. The child's
+    // own come after them, where they take no key they omit from a CoreX entry.
+    expect($completed)->toBe([...child_lists_names_only($corex), $own]);
 });
 
-it('keeps a child\'s own entry for a CoreX template, in CoreX\'s place (FR-023)', function () {
+it('keeps a child\'s own entry for a CoreX template whole, in CoreX\'s place (FR-023)', function () {
     $corex = child_lists_corex_custom_templates();
     $renamed = ['name' => 'page-contact', 'title' => 'Talk to Acme', 'postTypes' => ['page']];
 
     $completed = ChildCustomTemplates::complete([$renamed], $corex);
     $at = array_search('page-contact', array_column($corex, 'name'), true);
+    $expected = child_lists_names_only($corex);
+    $expected[$at] = $renamed;
 
-    expect($completed)->toHaveCount(count($corex))
-        ->and($completed[$at])->toBe($renamed)
-        ->and(array_column($completed, 'name'))->toBe(array_column($corex, 'name'));
+    expect($completed)->toBe($expected);
+});
+
+it('turns an empty list into CoreX\'s names only (FR-023)', function () {
+    $corex = child_lists_corex_custom_templates();
+
+    expect(ChildCustomTemplates::complete([], $corex))->toBe(child_lists_names_only($corex));
 });

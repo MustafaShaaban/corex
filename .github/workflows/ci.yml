@@ -730,6 +730,11 @@ jobs:
           test -f sites/acme/UPDATING-COREX.md
           test -f .github/workflows/site-acme.yml
           cat sites/acme/corex-baseline.json
+          # spec 135, FR-036: from the repository root, with one site under sites/, make:block writes
+          # into the site plugin, so the client commits the block with the site.
+          wp corex make:block Banner --path="$GITHUB_WORKSPACE/wp"
+          test -f sites/acme/acme-site/src/Blocks/banner/block.json
+          test -f sites/acme/acme-site/src/Blocks/BannerRenderer.php
 
       - name: Commit it, as a client repository would
         run: |
@@ -766,6 +771,58 @@ jobs:
           cd sites/acme/acme-theme
           npm install --no-audit --no-fund
           npm run build
+
+      # spec 135, FR-034 and FR-036: the site plugin builds its blocks (the --starter example and the
+      # one make:block wrote) from a clean install of its own folder, also before the root install.
+      - name: The client plugin builds its blocks from a clean install, with no root node_modules
+        run: |
+          set -euo pipefail
+          test ! -d node_modules
+          cd sites/acme/acme-site
+          npm install --no-audit --no-fund
+          npm run build
+          test -f build/blocks/banner/block.json
+          test -f build/blocks/example/block.json
+
+      # spec 135, FR-030 to FR-033 and FR-036: activated beside CoreX, the plugin boots its provider,
+      # its blocks are registered from build/blocks, and each renders its renderer's markup.
+      - name: The client plugin registers its blocks, and they render
+        run: |
+          set -euo pipefail
+          WP="$GITHUB_WORKSPACE/wp"
+          ln -sfn "$GITHUB_WORKSPACE/sites/acme/acme-site" "$WP/wp-content/plugins/acme-site"
+          wp plugin activate acme-site --path="$WP"
+          cat > "$RUNNER_TEMP/site-blocks.php" <<'PHP'
+          <?php
+          // Each block with the attributes its block.json declares, and what its renderer prints from them:
+          // make:block's banner prints its title (and nothing without one), the example lists its records.
+          $checks = [
+              'acme-site/banner'  => [['title' => 'Hello from the banner'], '<p class="acme-site-banner__title">Hello from the banner</p>'],
+              'acme-site/example' => [[], 'class="acme-theme-example wp-block-acme-site-example"'],
+          ];
+          foreach ($checks as $name => [$attrs, $expected]) {
+              $type = WP_Block_Type_Registry::get_instance()->get_registered($name);
+              if ($type === null) {
+                  fwrite(STDERR, "{$name} is not registered\n");
+                  exit(1);
+              }
+              $script = wp_scripts()->registered[$type->editor_script_handles[0] ?? ''] ?? null;
+              if ($script === null || ! str_contains((string) $script->src, '/build/blocks/')) {
+                  fwrite(STDERR, "{$name} is not registered from build/blocks\n");
+                  exit(1);
+              }
+              $html = render_block(['blockName' => $name, 'attrs' => $attrs, 'innerBlocks' => [], 'innerHTML' => '', 'innerContent' => []]);
+              if (! str_contains($html, $expected)) {
+                  fwrite(STDERR, "{$name} did not render {$expected}: {$html}\n");
+                  exit(1);
+              }
+              echo $name, ': ', $html, "\n";
+          }
+          PHP
+          wp eval-file "$RUNNER_TEMP/site-blocks.php" --path="$WP"
+          # Put the install back as the steps below expect it.
+          wp plugin deactivate acme-site --path="$WP"
+          rm "$WP/wp-content/plugins/acme-site"
 
       # spec 101, SC-005: a new client site serves its own coming-soon page with no step other
       # than switching its theme on and switching the mode. The page is edited in the client's

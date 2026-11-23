@@ -2,18 +2,18 @@
 
 /**
  * What the editor of a child of the CoreX theme sees, on a real WordPress (spec 135, slice 6, G-048;
- * User Story 5; SC-006; DECISIONS #664).
+ * User Story 5; SC-006; DECISIONS #664, #668).
  *
  * Each test writes a small child of the CoreX theme into a theme root of its own, switches to it
- * and switches back in `finally`, as ComingSoonTemplateResolutionTest does, so what is measured is
- * WordPress's own registry, template lists and theme JSON merge with the switches set.
+ * and switches back in `afterEach`, so what is measured is WordPress's own pattern registry, template
+ * lists and theme JSON merge with the switch set. Patterns are registered by running the callbacks
+ * WordPress has on `init`, in their priority order, as a request does.
  *
  * @package Corex\Tests\Integration\Theme
  */
 
 declare(strict_types=1);
 
-use Corex\Boot;
 use Corex\Cli\Generators\StubRenderer;
 use Corex\Cli\Site\ParentThemeTokens;
 use Corex\Cli\Site\SiteScaffolder;
@@ -69,16 +69,32 @@ function corexListsSwitches(array $parent): array
 /** @return list<string> The slugs the CoreX theme's own `patterns/` folder declares. */
 function corexListsCorexPatternSlugs(): array
 {
-    return ParentPatternsHider::slugs(wp_get_theme(get_template())->get_block_patterns());
+    return ParentPatternsHider::slugs(wp_get_theme('corex')->get_block_patterns());
 }
 
-/** @return list<string> Every registered pattern's name. */
-function corexListsRegistered(): array
+/** @return int How many pattern files the CoreX theme's folder holds. */
+function corexListsCorexPatternFiles(): int
 {
-    return array_column(WP_Block_Patterns_Registry::get_instance()->get_all_registered(), 'name');
+    return count(glob(dirname(__DIR__, 3) . '/theme/patterns/*.php') ?: []);
 }
 
-/** Register the theme folders' patterns the way a request on the active theme would. */
+/**
+ * The CoreX theme's custom templates, name => title, as its theme.json lists them.
+ *
+ * @return array<string, string>
+ */
+function corexListsCorexCustomTitles(): array
+{
+    $entries = json_decode((string) file_get_contents(dirname(__DIR__, 3) . '/theme/theme.json'), true)['customTemplates'];
+
+    return array_column($entries, 'title', 'name');
+}
+
+/**
+ * Register the theme folders' patterns as a request on the active theme does: the theme folders'
+ * patterns are dropped, then every `init` callback that registers or changes them runs, in the
+ * priority order WordPress gives them.
+ */
 function corexListsRegisterThemePatterns(): void
 {
     $registry = WP_Block_Patterns_Registry::get_instance();
@@ -87,7 +103,36 @@ function corexListsRegisterThemePatterns(): void
             $registry->unregister($slug);
         }
     }
-    _register_theme_block_patterns();
+
+    $init = $GLOBALS['wp_filter']['init'] ?? null;
+    expect($init)->toBeInstanceOf(WP_Hook::class);
+
+    $callbacks = $init->callbacks;
+    ksort($callbacks);
+    foreach ($callbacks as $hooked) {
+        foreach ($hooked as $callback) {
+            $function = $callback['function'];
+            if ($function === '_register_theme_block_patterns'
+                || (is_array($function) && $function[0] instanceof ParentPatternsHider)) {
+                call_user_func($function);
+            }
+        }
+    }
+}
+
+/**
+ * Every registered pattern's `inserter`, by name (true when the pattern does not set it).
+ *
+ * @return array<string, bool>
+ */
+function corexListsInserter(): array
+{
+    $inserter = [];
+    foreach (WP_Block_Patterns_Registry::get_instance()->get_all_registered() as $pattern) {
+        $inserter[$pattern['name']] = ($pattern['inserter'] ?? true) !== false;
+    }
+
+    return $inserter;
 }
 
 /** Remove a folder and everything in it. */
@@ -106,33 +151,37 @@ function corexListsRemove(string $dir): void
     rmdir($dir);
 }
 
-/**
- * The slugs a Site Editor collection route lists, asked as an administrator.
- *
- * @return list<string>
- */
-function corexListsRest(string $route): array
+/** Act as an administrator of the install. */
+function corexListsAsAdministrator(): void
 {
-    $response = rest_do_request(new WP_REST_Request('GET', $route));
+    $admins = get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID']);
+    expect($admins)->not->toBe([]);
+    wp_set_current_user((int) $admins[0]);
+}
+
+/** A REST GET answered as WordPress answers the editor. */
+function corexListsRest(string $route, array $params = []): mixed
+{
+    $request = new WP_REST_Request('GET', $route);
+    foreach ($params as $key => $value) {
+        $request->set_param($key, $value);
+    }
+    $response = rest_do_request($request);
 
     expect($response->get_status())->toBe(200);
 
-    return array_column($response->get_data(), 'slug');
+    return $response->get_data();
 }
 
 beforeEach(function () {
     $this->previousStylesheet = get_stylesheet();
     $this->previousUser = get_current_user_id();
     $this->roots = [];
-    $this->created = [];
+    $this->stylesheets = [];
 });
 
 afterEach(function () {
     global $wp_theme_directories;
-
-    foreach ($this->created as $id) {
-        wp_delete_post($id, true);
-    }
 
     $registry = WP_Block_Patterns_Registry::get_instance();
     if ($registry->is_registered('corex-lists/own')) {
@@ -152,158 +201,202 @@ afterEach(function () {
     corexListsRegisterThemePatterns();
     wp_set_current_user($this->previousUser);
 
+    foreach ($this->stylesheets as $stylesheet) {
+        delete_option('theme_mods_' . $stylesheet);
+    }
     foreach ($this->roots as $root) {
         corexListsRemove($root);
     }
 });
 
-it('unregisters every pattern of the CoreX theme\'s folder and keeps the child\'s and corex-ui\'s (FR-021, SC-006)', function () {
-    $child = corexListsChild(corexListsSwitches(['hidePatterns' => true]));
-    $this->roots[] = $child['root'];
+/** Write a child, make it active, and have the test remove it afterwards. */
+function corexListsUse(object $test, ?array $themeJson, array $files = []): array
+{
+    $child = corexListsChild($themeJson, $files);
+    $test->roots[] = $child['root'];
+    $test->stylesheets[] = $child['stylesheet'];
+
+    return $child;
+}
+
+it('keeps every pattern of the CoreX theme\'s folder registered and out of the inserter, and the child\'s and corex-ui\'s as they are (FR-021, SC-006)', function () {
+    corexListsUse($this, corexListsSwitches(['hidePatterns' => true]));
     corexListsRegisterThemePatterns();
 
     $corex = corexListsCorexPatternSlugs();
-    $before = corexListsRegistered();
-    $others = array_values(array_diff($before, $corex));
+    $inserter = corexListsInserter();
+    $hidden = array_keys(array_filter($inserter, static fn (bool $shown): bool => ! $shown));
+    sort($hidden);
+    $expected = array_values(array_diff($corex, ['corex/loading']));
+    sort($expected);
 
-    Boot::app()->container()->make(ParentPatternsHider::class)->hide();
-    $after = corexListsRegistered();
-
-    expect($corex)->toHaveCount(26)
-        ->and(array_values(array_intersect($after, $corex)))->toBe(['corex/loading'])
+    expect($corex)->toHaveCount(corexListsCorexPatternFiles())
+        // Every CoreX pattern is still registered, so a template that inserts one draws it.
+        ->and(array_diff($corex, array_keys($inserter)))->toBe([])
+        ->and($hidden)->toBe($expected)
+        // The child's own file for a CoreX slug is the child's, and is offered.
+        ->and($inserter['corex/loading'])->toBeTrue()
         ->and(WP_Block_Patterns_Registry::get_instance()->get_registered('corex/loading')['title'])->toBe('The child\'s loading')
-        ->and($after)->toContain('corex-lists/own')
-        ->and(array_values(array_diff($after, $corex)))->toBe($others);
+        ->and($inserter['corex-lists/own'])->toBeTrue()
+        // corex-ui's `corex/*` patterns are not the CoreX theme's folder's.
+        ->and($inserter['corex/hero'])->toBeTrue();
 
-    // corex-ui's `corex/*` patterns are not the CoreX theme's folder's, and stay.
-    expect($others)->toContain('corex/hero');
+    // The editor's inserter reads this route: it still lists them, marked out of the inserter.
+    corexListsAsAdministrator();
+    $rest = [];
+    foreach (corexListsRest('/wp/v2/block-patterns/patterns') as $pattern) {
+        // The route leaves `inserter` out for a pattern that does not set it: it is offered.
+        $rest[$pattern['name']] = ($pattern['inserter'] ?? true) !== false;
+    }
+    expect(array_intersect_key($rest, array_flip($corex)))->toBe(array_intersect_key($inserter, array_flip($corex)))
+        ->and($rest['corex/section-services-grid'] ?? null)->toBeFalse()
+        ->and($rest['corex/loading'] ?? null)->toBeTrue()
+        ->and($rest['corex/hero'] ?? null)->toBeTrue();
 });
 
-it('leaves every pattern registered for a child that does not set hidePatterns (FR-021)', function () {
-    $child = corexListsChild(corexListsSwitches(['hideTemplates' => true]));
-    $this->roots[] = $child['root'];
+it('still draws a CoreX template\'s CoreX patterns, in the editor and for a visitor, under a child that hides them (FR-021, User Story 5.2)', function () {
+    $child = corexListsUse($this, corexListsSwitches(['hidePatterns' => true]));
     corexListsRegisterThemePatterns();
-    $before = corexListsRegistered();
+    corexListsAsAdministrator();
 
-    Boot::app()->container()->make(ParentPatternsHider::class)->hide();
+    // The Site Editor's copy: WordPress resolves each pattern block into the pattern's blocks.
+    $template = corexListsRest('/wp/v2/templates/' . $child['stylesheet'] . '//page-services', ['context' => 'edit']);
+    $raw = (string) ($template['content']['raw'] ?? '');
 
-    expect(corexListsRegistered())->toBe($before)
-        ->and(array_intersect(corexListsCorexPatternSlugs(), $before))->toHaveCount(26);
+    expect($raw)->not->toContain('wp:pattern')
+        ->and($raw)->toContain('corex-services__grid')
+        ->and($raw)->toContain('corex-process');
+
+    // A visitor's page, drawn from the same template.
+    wp_set_current_user(0);
+    $block = get_block_template($child['stylesheet'] . '//page-services');
+    expect($block)->toBeInstanceOf(WP_Block_Template::class);
+    $html = do_blocks($block->content);
+
+    expect($html)->toContain('corex-services__grid')
+        ->and($html)->toContain('corex-process');
+});
+
+it('leaves every pattern in the inserter for a child that does not set hidePatterns (FR-021)', function () {
+    corexListsUse($this, corexListsSwitches([]));
+    corexListsRegisterThemePatterns();
+
+    $inserter = corexListsInserter();
+
+    expect(array_filter(
+        array_intersect_key($inserter, array_flip(corexListsCorexPatternSlugs())),
+        static fn (bool $shown): bool => ! $shown,
+    ))->toBe([]);
 });
 
 it('leaves everything as it was under the CoreX theme itself (User Story 5.4)', function () {
     switch_theme('corex');
     WP_Theme_JSON_Resolver::clean_cached_data();
     corexListsRegisterThemePatterns();
-    $before = corexListsRegistered();
 
-    Boot::app()->container()->make(ParentPatternsHider::class)->hide();
-
-    expect(corexListsRegistered())->toBe($before)
-        ->and(wp_get_theme()->get_page_templates(null, 'page'))->toHaveKey('page-landing');
+    expect(array_filter(
+        array_intersect_key(corexListsInserter(), array_flip(corexListsCorexPatternSlugs())),
+        static fn (bool $shown): bool => ! $shown,
+    ))->toBe([])
+        ->and(wp_get_theme()->get_page_templates(null, 'page'))->toHaveKeys(array_keys(corexListsCorexCustomTitles()));
 });
 
-it('lists no template or part the child lacks in the Site Editor, and still draws a page with one (FR-022, SC-006)', function () {
-    $child = corexListsChild(corexListsSwitches(['hideTemplates' => true]));
-    $this->roots[] = $child['root'];
-    $admins = get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID']);
-    expect($admins)->not->toBe([]);
-    wp_set_current_user((int) $admins[0]);
+it('changes no template list or page template choice for a child that sets hideTemplates, which was withdrawn (DECISIONS #668)', function () {
+    corexListsAsAdministrator();
 
-    $templates = corexListsRest('/wp/v2/templates');
-    $parts = corexListsRest('/wp/v2/template-parts');
+    $measure = static function (): array {
+        return [
+            'templates' => array_column(corexListsRest('/wp/v2/templates'), 'slug'),
+            'parts' => array_column(corexListsRest('/wp/v2/template-parts'), 'slug'),
+            'choices' => array_keys(wp_get_theme()->get_page_templates(null, 'page')),
+        ];
+    };
 
-    expect($templates)->toContain('front-page')
-        ->and($templates)->not->toContain('index')
-        ->and($templates)->not->toContain('page-landing')
-        ->and($parts)->not->toContain('header')
-        ->and($parts)->not->toContain('footer');
+    corexListsUse($this, corexListsSwitches([]));
+    $without = $measure();
 
-    // Outside the two routes the lists are whole: WordPress resolves a page through them.
-    expect(array_column(get_block_templates(), 'slug'))->toContain('index')
-        ->and(array_column(get_block_templates([], 'wp_template_part'), 'slug'))->toContain('header');
+    corexListsUse($this, corexListsSwitches(['hideTemplates' => true]));
+    $with = $measure();
 
-    // The CoreX theme's index, as WordPress serves it (it names the active theme on each part).
-    $index = resolve_block_template('index', ['index'], '');
-    expect($index)->toBeInstanceOf(WP_Block_Template::class)
-        ->and($index->slug)->toBe('index')
-        ->and(str_replace(',"theme":"' . $child['stylesheet'] . '"', '', $index->content))
-        ->toBe((string) file_get_contents(get_template_directory() . '/templates/index.html'));
+    expect($with)->toBe($without)
+        ->and($with['templates'])->toContain('page-landing')
+        ->and($with['parts'])->toContain('header')
+        ->and($with['choices'])->toContain('page-landing');
 });
 
-it('takes the CoreX theme\'s custom templates out of the page template choices, but not a page\'s own (FR-022)', function () {
-    $child = corexListsChild(
-        [...corexListsSwitches(['hideTemplates' => true]), 'customTemplates' => [['name' => 'page-acme', 'title' => 'Acme page', 'postTypes' => ['page']]]],
-        ['templates/page-acme.html' => "<!-- wp:post-content /-->\n"],
-    );
-    $this->roots[] = $child['root'];
-
-    $choices = wp_get_theme()->get_page_templates(null, 'page');
-
-    // A page already drawn by Landing page keeps it among its choices, and saving it keeps it.
-    $page = wp_insert_post(['post_type' => 'page', 'post_status' => 'draft', 'post_title' => 'Lists page']);
-    expect($page)->toBeInt()->toBeGreaterThan(0);
-    $this->created[] = $page;
-    update_post_meta($page, '_wp_page_template', 'page-landing');
-    wp_update_post(['ID' => $page, 'post_title' => 'Lists page, saved']);
-
-    expect($choices)->toHaveKey('page-acme')
-        ->and(array_intersect_key($choices, array_flip(['page-landing', 'page-contact', 'page-form', 'page-about', 'page-services', 'page-account'])))->toBe([])
-        ->and(wp_get_theme()->get_page_templates(get_post($page)))->toHaveKey('page-landing')
-        ->and(get_page_template_slug($page))->toBe('page-landing');
-});
-
-it('offers CoreX\'s six custom templates with their titles beside the child\'s own (FR-023, User Story 5.3)', function () {
-    $child = corexListsChild(
+it('offers CoreX\'s custom templates with their titles beside the child\'s own (FR-023, User Story 5.3)', function () {
+    corexListsUse(
+        $this,
         ['customTemplates' => [['name' => 'page-acme', 'title' => 'Acme page']]],
         ['templates/page-acme.html' => "<!-- wp:post-content /-->\n"],
     );
-    $this->roots[] = $child['root'];
 
-    $choices = wp_get_theme()->get_page_templates(null, 'page');
+    $corex = corexListsCorexCustomTitles();
+    $expected = [];
+    foreach ($corex as $name => $title) {
+        $expected[$name] = ['title' => $title, 'postTypes' => ['page']];
+    }
+    $expected['page-acme'] = ['title' => 'Acme page', 'postTypes' => ['page']];
 
-    expect(array_intersect_key($choices, array_flip(['page-landing', 'page-contact', 'page-form', 'page-about', 'page-services', 'page-account', 'page-acme'])))->toEqual([
-        'page-landing' => 'Landing page',
-        'page-contact' => 'Contact page',
-        'page-form' => 'Form page',
-        'page-about' => 'About page',
-        'page-services' => 'Services page',
-        'page-account' => 'Account page',
-        'page-acme' => 'Acme page',
-    ]);
+    // What WordPress merged: CoreX's entries as CoreX lists them, then the child's own.
+    expect(WP_Theme_JSON_Resolver::get_theme_data([], ['with_supports' => false])->get_custom_templates())->toBe($expected)
+        ->and(array_intersect_key(wp_get_theme()->get_page_templates(null, 'page'), $expected))
+        ->toEqual(array_map(static fn (array $entry): string => $entry['title'], $expected));
+});
 
-    // What WordPress merged: CoreX's six as CoreX lists them, then the child's own.
-    expect(WP_Theme_JSON_Resolver::get_theme_data([], ['with_supports' => false])->get_custom_templates())->toBe([
-        'page-landing' => ['title' => 'Landing page', 'postTypes' => ['page']],
-        'page-contact' => ['title' => 'Contact page', 'postTypes' => ['page']],
-        'page-form' => ['title' => 'Form page', 'postTypes' => ['page']],
-        'page-about' => ['title' => 'About page', 'postTypes' => ['page']],
-        'page-services' => ['title' => 'Services page', 'postTypes' => ['page']],
-        'page-account' => ['title' => 'Account page', 'postTypes' => ['page']],
-        'page-acme' => ['title' => 'Acme page', 'postTypes' => ['page']],
-    ]);
+it('keeps CoreX\'s custom template titles in the site\'s language beside the child\'s own (FR-023)', function () {
+    $catalogue = dirname(__DIR__, 3) . '/plugins/corex-core/languages/corex-ar.mo';
+    expect(is_readable($catalogue))->toBeTrue();
+    unload_textdomain('corex');
+    expect(load_textdomain('corex', $catalogue))->toBeTrue();
+
+    try {
+        corexListsUse(
+            $this,
+            ['customTemplates' => [['name' => 'page-acme', 'title' => 'Acme page', 'postTypes' => ['page']]]],
+            ['templates/page-acme.html' => "<!-- wp:post-content /-->\n"],
+        );
+
+        $expected = [];
+        foreach (corexListsCorexCustomTitles() as $name => $title) {
+            // The context WordPress's theme.json i18n schema gives a custom template's title.
+            $expected[$name] = translate_with_gettext_context($title, 'Custom template name', 'corex');
+            expect($expected[$name])->not->toBe($title);
+        }
+        $expected['page-acme'] = 'Acme page';
+
+        expect(wp_list_pluck(WP_Theme_JSON_Resolver::get_theme_data([], ['with_supports' => false])->get_custom_templates(), 'title'))
+            ->toBe($expected);
+    } finally {
+        unload_textdomain('corex');
+        WP_Theme_JSON_Resolver::clean_cached_data();
+    }
 });
 
 it('keeps a child\'s own title for a CoreX custom template (FR-023)', function () {
-    $child = corexListsChild(['customTemplates' => [['name' => 'page-contact', 'title' => 'Talk to Acme', 'postTypes' => ['page']]]]);
-    $this->roots[] = $child['root'];
+    corexListsUse($this, ['customTemplates' => [['name' => 'page-contact', 'title' => 'Talk to Acme', 'postTypes' => ['page']]]]);
 
-    $choices = wp_get_theme()->get_page_templates(null, 'page');
-
-    expect($choices['page-contact'] ?? null)->toBe('Talk to Acme')
-        ->and($choices['page-landing'] ?? null)->toBe('Landing page')
-        ->and($choices['page-account'] ?? null)->toBe('Account page');
-});
-
-it('leaves a child that declares no custom templates inheriting CoreX\'s (FR-023)', function () {
-    $child = corexListsChild(['settings' => []]);
-    $this->roots[] = $child['root'];
+    $expected = corexListsCorexCustomTitles();
+    $expected['page-contact'] = 'Talk to Acme';
 
     expect(array_column(WP_Theme_JSON_Resolver::get_theme_data([], ['with_supports' => false])->get_custom_templates(), 'title'))
-        ->toBe(['Landing page', 'Contact page', 'Form page', 'About page', 'Services page', 'Account page']);
+        ->toBe(array_values($expected));
 });
 
-it('generates a client theme that sets neither switch, so a new site shows everything (FR-024)', function () {
+it('gives a child with an empty list, or none, CoreX\'s custom templates (FR-023)', function () {
+    $corex = array_values(corexListsCorexCustomTitles());
+
+    corexListsUse($this, ['customTemplates' => []]);
+    $empty = array_column(WP_Theme_JSON_Resolver::get_theme_data([], ['with_supports' => false])->get_custom_templates(), 'title');
+
+    corexListsUse($this, ['settings' => []]);
+    $none = array_column(WP_Theme_JSON_Resolver::get_theme_data([], ['with_supports' => false])->get_custom_templates(), 'title');
+
+    expect($empty)->toBe($corex)
+        ->and($none)->toBe($corex);
+});
+
+it('generates a client theme that does not set the switch, so a new site shows everything (FR-024)', function () {
     $root = sys_get_temp_dir() . '/corex-lists-site-' . uniqid('', true);
     mkdir($root);
     $this->roots[] = $root;
@@ -319,5 +412,6 @@ it('generates a client theme that sets neither switch, so a new site shows every
     $readme = (string) file_get_contents($root . '/README.md');
 
     expect($themeJson['settings']['custom']['corex']['parent'] ?? null)->toBeNull()
-        ->and($readme)->toContain('settings.custom.corex.parent.hidePatterns');
+        ->and($readme)->toContain('settings.custom.corex.parent.hidePatterns')
+        ->and($readme)->not->toContain('hideTemplates');
 });

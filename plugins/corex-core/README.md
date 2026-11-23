@@ -390,15 +390,15 @@ wholesale. A missing `brand.json` yields `[]` (defaults stand); a malformed one 
 logged, so a bad file never breaks the site. Full alternate styles live in `theme/styles/*.json`
 (e.g. `dark.json`) and WordPress auto-registers them as selectable style variations.
 
-A **child of the CoreX theme** (a client theme with `Template: corex`) gets four more services, all
+A **child of the CoreX theme** (a client theme with `Template: corex`) gets three more services, all
 off for the CoreX theme itself and for a standalone theme. `ChildThemeSwitches` reads
-`settings.custom.corex.parent.hidePatterns` and `hideTemplates` from the child's own `theme.json`
-only. With `hidePatterns`, `ParentPatternsHider` unregisters the patterns of the CoreX theme's
-`patterns/` folder on an admin screen and in a REST request (a visitor's page keeps them). With
-`hideTemplates`, `ParentTemplatesHider` leaves the templates and parts only the CoreX theme has out
-of the Site Editor's two list routes and the page template choices, never out of resolution.
-`ChildCustomTemplates` completes a child's `customTemplates` with the CoreX theme's entries on
-`wp_theme_json_data_theme`, before WordPress merges the two lists by position. The rules for a
+`settings.custom.corex.parent.hidePatterns` from the child's own `theme.json` only. With it,
+`ParentPatternsHider` registers each pattern of the CoreX theme's `patterns/` folder again with
+`inserter` set to `false` on `init` at 11, after WordPress registers the theme folders' patterns:
+the inserter and the Site Editor's Patterns screen leave them out, and every template and page that
+uses one still draws it. `ChildCustomTemplates` completes a child's `customTemplates` with CoreX's
+six on `wp_theme_json_data_theme`, before WordPress merges the two lists by position: a CoreX entry
+the child does not name is only its name, so the merge keeps CoreX's translated title. The rules for a
 client site: `docs/en/04-team-workflow/client-site-workflow.md`.
 
 ## Events

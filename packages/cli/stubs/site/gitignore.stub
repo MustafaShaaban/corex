@@ -1,7 +1,7 @@
 # Dependencies / build
 /vendor/
-/node_modules/
-/**/build/
+node_modules/
+build/
 /**/dist/
 
 # Test run cache (named in the client plugin's phpunit.xml.dist)

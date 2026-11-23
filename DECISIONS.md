@@ -21923,6 +21923,50 @@ must repeat the six first, in order, because WordPress merges that list by posit
 and would need a screen and a design. Removing the parent's patterns by slug prefix: an add-on's `corex/*`
 patterns would go too; the theme folder's own files are the exact list.
 
+## #665 -- How a generated site plugin boots and registers its blocks: the details spec 135 left open
+
+**Date:** 2026-11-23. **Spec:** 135, slice 5 (G-007). **Branch:** `spec/135-slice-5-site-plugin`.
+**Decided:** by the spec 135 session, under the owner's delegation, from what the slice's builder found and proposed.
+
+- **Priority 20 on `plugins_loaded`.** CoreX boots at 10, so in the usual order the site's provider boots at once;
+  `Corex::onReady` covers every other order, and a plugin activated after `plugins_loaded` has run boots straight
+  away. A static guard boots it once.
+- **The text domain comes from the block's `block.json`, not the registered type.** Measured on WordPress 7.1:
+  `register_block_type()` does not copy `textdomain` onto the `WP_Block_Type`, so reading it from the type left
+  every site block bound to `corex`. All 30 CoreX blocks name `corex`, so none changes.
+- **What `verify:dist` takes for a site plugin, and when it warns (#666).** A plugin folder that ends in `-site`,
+  or whose main file declares `Requires Plugins:` naming `corex-core`; a folder that starts `corex-` is never
+  checked. It warns only when a block has no built folder and its `block.json` names a `file:./` asset
+  the block's folder does not hold: Muva ships hand-written blocks whose every file is there, unbuilt on purpose,
+  and a rule of "block sources need a build" would have failed its package (read in Muva's repository).
+- **A built folder wins even when it is empty.** A site that ran `npm run build` before it had a block has an
+  empty `build/blocks`, and a block added to `src/Blocks` registers after the next build. That is the rule CoreX's
+  own plugins follow, and a block needs its build for its editor script anyway.
+- **One plugin file for `--starter` and the default.** The starter's own plugin stub, which booted with `new` and no
+  guard, is gone; its example block is discovered like any other and its provider resolves through the container.
+
+## #666 -- `verify:dist` warns about a site block left unbuilt; it does not fail
+
+**Date:** 2026-11-23. **Spec:** 135, slice 5 (G-007, FR-038). **Branch:** `spec/135-slice-5-site-plugin`.
+**Decided:** by the spec 135 session, under the owner's delegation, after the slice's review.
+
+**Found** (read in Perego's repository, 2026-11-23): Perego's site plugin builds its blocks into `build/Blocks`,
+which its `.gitignore` leaves out, and its `azure-pipelines.yml` runs `npm ci`, the root `npm run build` (the
+workspaces only), `build:dist` and `verify:dist`, never the site plugin's build. A check that failed a package
+whose blocks name a compiled file the package lacks would have failed Perego's pipeline the day it took the
+release, and a release must not change a client by being taken (#651, #652). Muva ships hand-written blocks
+whose files are all there.
+
+- `verifyDist` returns `{ ok, errors, warnings }`; a warning never changes `ok`. Each warning names the plugin,
+  the block and the missing file; `npm run verify:dist` and `build:dist` print it as `WARN`.
+- A block is built when a folder of its name exists under the plugin's `build/` in any case of `blocks`
+  (Perego's `build/Blocks`, CoreX's `build/blocks`).
+- The owner was told, through the coordinating session, that Perego's packages may ship its blocks without
+  their compiled files.
+
+*Not chosen.* Failing, behind an opt-in flag: one more switch for a check whose whole value is being seen; a
+warning in every run is seen without anyone choosing it.
+
 ## #667 -- Where a child's editor switches act, and in which order its custom templates are completed
 
 **Date:** 2026-11-23. **Spec:** 135, slice 6 (G-048). **Branch:** `spec/135-slice-6-child-editor-lists`.
@@ -22369,3 +22413,54 @@ after corex-reviewer's round.
 *For the maintenance line:* this slice rests on slice 3 (#506): the gate imports `@corex/build-tools/parity`, and
 the `supports` lines and stubs it edits sit beside slice 3's `corex.editor` keys. Slice 3's commit is
 cherry-picked first. `ProfileServiceProvider.php` changed after the tag (slice 1 note).
+
+## #701 -- Pixel parity sets the release order: page parts first, then the features
+
+**Date:** 2026-11-23. **Spec:** 137 (slice 6), 149, 150, 153 (new), 144 (G-014 leaves it). **Decided:** by the gap coordinator,
+on the Blackstone site's decision 29, relayed by its coordinator: every visible slice of the site matches its
+Figma frame, and a slice waits rather than differs. Amends the wave order of #652. Spec 153 is new: the editor experience gaps G-046 to G-053
+that wave 1 does not take (G-048 is spec 135, #664; G-051 is spec 136, #679).
+
+- The site's Home slices 9, 10 and 12 now wait for four CoreX gaps instead of working around them: G-010 (a
+  carousel of records that moves and fades, and a partner ticker), G-012 (reveal on scroll and count-up, for the
+  KPI banner and the hero's stats), G-008 (a record picker, for featured stories and articles), and a header
+  scroll distance a site can set (today `theme/assets/js/corex-navigation.js` swaps the header state at a fixed
+  `SCROLL_THRESHOLD` of 8 pixels, with no token).
+- **The header scroll distance joins wave 1** as spec 137 slice 6, after its slices 1 to 5, so it ships in
+  `v0.49.0`. It is a setting a site's `theme.json` can change, read by the header script, defaulting to today's 8
+  pixels so no site changes on update. Spec 137 records it in its own range (#690 to #699).
+- **G-012 moves from spec 150 to spec 149.** Spec 149 becomes lists, the carousel, the ticker and reveal: G-008,
+  G-010, G-012, then G-009 (visitor-side filters), in that order.
+- **The release order after `v0.49.0`**, each cut on `release/gap-line` like `v0.49.0`. The visible page parts the
+  site's pages wait for go first; the features follow. It replaces the tags of #652.
+  - `v0.50.0`: spec 149, G-008, G-010, G-012, then G-009. G-009 ships here if it is on `main` when the other three
+    are, and otherwise with the next tag.
+  - `v0.51.0`: spec 150, the page parts: G-014's visible trail (parent pages, the post type and term steps; moved
+    here from spec 144, whose SEO add-on keeps the `BreadcrumbList` data), G-015, G-016, G-017, G-019 and the rest
+    of G-003. With it, spec 153, the editor experience: G-046, G-047, G-049, G-050 and G-053, and G-052 only if
+    the site's spec 001 shows WordPress 7.0's content-only mode cannot add or reorder an item in a locked section.
+  - `v0.52.0`: specs 138 to 143 (forms, mail, the newsletter, careers, privacy and private uploads, people and
+    settings lists).
+  - `v0.53.0`: specs 144 to 148 (the SEO add-on, analytics and consent, agent readiness, hardening, languages).
+  - `v0.54.0`: spec 151 (G-018, G-020, G-021) and spec 152 (G-043, G-044, G-045). A gap here moves ahead when the
+    site names a launch page that rests on it.
+- **What spec 149 rests on, measured** with `git log v0.48.1..origin/main` on 2026-11-23: since the tag, `main`
+  changed the carousel and posts blocks only through wave 1 (spec 136 slices 1, 3 and 2a), the stat block the same
+  way, and `corex-navigation.js` not at all. So nothing keeps the four gaps off the line, provided wave 1 is
+  carried first. One risk: `theme/theme.json` also changed through revamp work the line never carries (specs 121
+  and 134). A new token there is a hunk to place by hand beside the tag's own tokens. If a slice's token only
+  makes sense with that revamp work, #651 point 4 applies.
+- The same measure for specs 150 and 151: `BreadcrumbsRenderer.php`, `CopyrightRenderer.php`, `TeamRenderer.php`,
+  `GalleryRenderer.php`, `HeroRenderer.php`, `addons/corex-media/src/MediaImage.php`, `theme/templates/single.html`,
+  `plugins/corex-core/src/Models/Model.php`, `PostRepository.php` and `ConnectorRegistry.php` are unchanged on
+  `main` since `v0.48.1`; only the blocks' `block.json` files changed, through wave 1. Spec 153 is new code. So
+  each can go to the line once wave 1 is carried. Specs 138 to 143 are not measured yet; forms, core and settings
+  moved a lot after the tag, so some of them may ship only with `main`'s own tag.
+- Every visible part of spec 149 (the carousel's controls, the ticker, the reveal) is a CoreX framework design,
+  drawn in Claude Design and approved by the owner before it is built (`AGENTS.md`, "UI, UX and front end"). The
+  Figma frames of the site set what the blocks must be able to show; the spec lists the drawings, and their
+  approval sets `v0.50.0`'s date.
+
+*Not chosen.* Shipping the four with the forms wave: it would hold three Home slices behind specs that are not
+written yet and rest far more on revamp code. A separate spec for the scroll distance: it is one setting in the
+header system spec 137 already owns.

@@ -653,7 +653,8 @@ function verifyDescribedContents( distDir, manifest ) {
  * Run from the repository root, like the build: that is where the probe is looked for.
  *
  * @param {string} distDir The built package.
- * @return {{ok:boolean, errors:string[]}} Whether the package can be deployed, and why not.
+ * @return {{ok:boolean, errors:string[], warnings:string[]}} Whether the package can be deployed, why not,
+ *     and what it may lack without failing (a warning never changes `ok`).
  */
 export function verifyDist( distDir ) {
 	const probeScript = join(
@@ -712,6 +713,10 @@ export function verifyDist( distDir ) {
 	// output — otherwise the deploy would serve a half-built client theme. Catches "packaged without building".
 	errors.push( ...verifyClientAssets( distDir ) );
 
+	// A site plugin that ships block sources ships them built, or its blocks are not there (spec 135, FR-038).
+	// A warning, not a failure: a client that packages its site plugin unbuilt keeps deploying (DECISIONS #666).
+	const warnings = verifyClientPluginBuilds( distDir );
+
 	// A child theme with no parent in the package does not run (spec 135, FR-017).
 	errors.push( ...verifyThemeParents( distDir ) );
 
@@ -725,7 +730,7 @@ export function verifyDist( distDir ) {
 	// Bootability: the packaged core plugin finds the packaged autoloader, and every namespace loads.
 	errors.push( ...verifyPackagedAutoload( distDir, probeScript ) );
 
-	return { ok: errors.length === 0, errors };
+	return { ok: errors.length === 0, errors, warnings };
 }
 
 /**
@@ -783,6 +788,166 @@ export function verifyClientAssets( distDir ) {
 	}
 
 	return errors;
+}
+
+// The block.json keys that name a file of the block's own (`file:./...`).
+const BLOCK_ASSET_KEYS = [
+	'editorScript',
+	'script',
+	'viewScript',
+	'viewScriptModule',
+	'editorStyle',
+	'style',
+	'viewStyle',
+	'render',
+];
+
+/**
+ * Whether a plugin folder's main file says `Requires Plugins:` corex-core.
+ *
+ * @param {string} folder The plugin's folder.
+ * @return {boolean} True when one of its top-level PHP files names corex-core as a requirement.
+ */
+function requiresCorex( folder ) {
+	return readdirSync( folder )
+		.filter( ( entry ) => entry.endsWith( '.php' ) )
+		.some( ( entry ) =>
+			/^[ \t/*#@]*Requires Plugins:.*\bcorex-core\b/im.test(
+				readFileSync( join( folder, entry ), 'utf8' )
+			)
+		);
+}
+
+/**
+ * The first `file:./` asset a block's block.json names that is not beside it (a compiled
+ * `style-index.css`, say). A block written by hand, whose files are all there, has none: a client
+ * may ship such blocks unbuilt on purpose (Muva does).
+ *
+ * @param {string} blockDir The block's folder, holding its block.json.
+ * @return {string|null} The missing file, relative to the block, or null when nothing is missing.
+ */
+function missingBlockAsset( blockDir ) {
+	let metadata;
+	try {
+		metadata = JSON.parse(
+			readFileSync( join( blockDir, 'block.json' ), 'utf8' )
+		);
+	} catch {
+		return null;
+	}
+
+	return (
+		BLOCK_ASSET_KEYS.flatMap( ( key ) => [ metadata?.[ key ] ].flat() )
+			.filter(
+				( value ) =>
+					typeof value === 'string' && value.startsWith( 'file:./' )
+			)
+			.map( ( value ) => value.slice( 'file:./'.length ) )
+			.find( ( file ) => ! existsSync( join( blockDir, file ) ) ) ?? null
+	);
+}
+
+/**
+ * The names of the blocks a plugin's build holds: the folders in `build/<blocks>/`, whatever the case
+ * of `blocks` (`make:site` writes `build/blocks`, Perego builds into `build/Blocks`).
+ *
+ * @param {string} folder The plugin's folder.
+ * @return {Set<string>} The built blocks' folder names; empty when there is no build.
+ */
+function builtBlockNames( folder ) {
+	const build = join( folder, 'build' );
+
+	if ( ! existsSync( build ) || ! statSync( build ).isDirectory() ) {
+		return new Set();
+	}
+
+	return new Set(
+		readdirSync( build, { withFileTypes: true } )
+			.filter(
+				( entry ) =>
+					entry.isDirectory() && entry.name.toLowerCase() === 'blocks'
+			)
+			.flatMap( ( entry ) =>
+				readdirSync( join( build, entry.name ), {
+					withFileTypes: true,
+				} )
+					.filter( ( block ) => block.isDirectory() )
+					.map( ( block ) => block.name )
+			)
+	);
+}
+
+/**
+ * Whether a plugin is a client's site plugin: its folder ends in `-site`, as `make:site` names it, or
+ * its main file says `Requires Plugins:` corex-core. CoreX's own plugins (`corex-*`) are not.
+ *
+ * @param {string} plugin Its folder name.
+ * @param {string} folder Its folder.
+ * @return {boolean} True for a client plugin.
+ */
+function isClientPlugin( plugin, folder ) {
+	return (
+		! plugin.startsWith( 'corex-' ) &&
+		statSync( folder ).isDirectory() &&
+		( plugin.endsWith( '-site' ) || requiresCorex( folder ) )
+	);
+}
+
+/**
+ * Every block of a client plugin under wp-content/plugins whose source (`src/Blocks/<block>/block.json`)
+ * names a file its folder lacks, and that the plugin's build does not hold (spec 135, FR-038). A site
+ * plugin registers its blocks from its build once built, and from sources that were never compiled
+ * before: a package of those has blocks with no scripts.
+ *
+ * These are warnings, not failures (DECISIONS #666): a client whose pipeline packages its site plugin
+ * without building it keeps deploying, and is told what is missing. A built block is a folder of the
+ * same name in `build/blocks` (any case). CoreX's own plugins are built by the framework's build and
+ * are not looked at, nor is a plugin that names no requirement on CoreX.
+ *
+ * @param {string} distDir The built bundle to check.
+ * @return {string[]} One message per unbuilt block, naming the plugin, the block and the missing file.
+ */
+export function verifyClientPluginBuilds( distDir ) {
+	const pluginsDir = join( distDir, 'wp-content', 'plugins' );
+
+	if ( ! existsSync( pluginsDir ) ) {
+		return [];
+	}
+
+	return readdirSync( pluginsDir )
+		.sort()
+		.flatMap( ( plugin ) => {
+			const folder = join( pluginsDir, plugin );
+			const sources = join( folder, 'src', 'Blocks' );
+
+			if (
+				! isClientPlugin( plugin, folder ) ||
+				! existsSync( sources )
+			) {
+				return [];
+			}
+
+			const built = builtBlockNames( folder );
+
+			return readdirSync( sources )
+				.sort()
+				.filter(
+					( block ) =>
+						! built.has( block ) &&
+						existsSync( join( sources, block, 'block.json' ) )
+				)
+				.flatMap( ( block ) => {
+					const asset = missingBlockAsset( join( sources, block ) );
+
+					return asset === null
+						? []
+						: [
+								`client plugin "${ plugin }": src/Blocks/${ block }/${ asset } is named in its ` +
+									`block.json and does not exist, and there is no compiled build/blocks/${ block } ` +
+									"(run the plugin's npm run build before packaging)",
+							];
+				} );
+		} );
 }
 
 /**
@@ -894,6 +1059,7 @@ if ( isMain ) {
 	}
 	if ( ! dryRun ) {
 		const v = verifyDist( distDir );
+		v.warnings.forEach( ( w ) => console.warn( 'WARN ' + w ) );
 		console.log(
 			v.ok
 				? 'dist verified OK'

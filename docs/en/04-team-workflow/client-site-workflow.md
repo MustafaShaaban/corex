@@ -108,9 +108,10 @@ then the CoreX theme's file is used. A file you do not create is not a gap: it i
   `styles/` and in any folder under it.
 - **Custom templates.** A client theme that adds a page template of its own lists only its own entry in
   `customTemplates` (and puts the file in `templates/`): it does not copy CoreX's six. WordPress merges the list
-  with the CoreX theme's by position, so `corex-core` completes it first: CoreX's entries in CoreX's order, with
-  the client theme's own entry in place of any CoreX one it names (its title wins), then the client theme's
-  other entries. The page template picker then offers CoreX's six, each with its title, and the client's.
+  with the CoreX theme's by position, so `corex-core` completes it first with CoreX's six, in CoreX's order: a
+  CoreX entry the client theme names is its own entry (its title wins), and one it does not name keeps the CoreX
+  theme's title, in the site's language, and post types. The client theme's other entries come after them. The
+  page template picker then offers CoreX's six, each with its title, and the client's.
 - **Template parts.** `templateParts` in a child's `theme.json` merges with the CoreX theme's by position too, and
   nothing completes it, so a list of one entry overwrites the CoreX theme's first. The generated `theme.json`
   declares neither list. A client theme that declares `templateParts` repeats every entry of the CoreX theme's, in
@@ -120,35 +121,32 @@ then the CoreX theme's file is used. A file you do not create is not a gap: it i
 
 ### What the editor offers
 
-By default the client's editors are offered everything the client theme inherits: the CoreX theme's 26 patterns
-(its corporate, SaaS and docs headers among them) and its templates and parts. When the client's design should be
-the only choice, the client theme says so in its own `theme.json`, with two switches:
+By default the client's editors are offered everything the client theme inherits, the CoreX theme's patterns
+among it (its corporate, SaaS and docs headers, for example). When the client's own patterns should be the only
+ones offered, the client theme says so in its own `theme.json`, with one switch:
 
 ```json
 {
 	"settings": {
 		"custom": {
 			"corex": {
-				"parent": { "hidePatterns": true, "hideTemplates": true }
+				"parent": { "hidePatterns": true }
 			}
 		}
 	}
 }
 ```
 
-- **`hidePatterns`** takes every pattern of the CoreX theme's `patterns/` folder out of the editor (the inserter,
-  the pattern lists of the post editor and the Site Editor). The client theme's own patterns stay, and so does
-  one of its own that has a CoreX pattern's `Slug:`; so do the patterns an add-on registers (`corex-ui`'s
-  `corex/*` sections).
-- **`hideTemplates`** takes the templates and parts only the CoreX theme has out of the Site Editor's template and
-  part lists and out of the page template choices. A template or part the client theme has a file for stays, and
-  so does a copy saved in the Site Editor and a template a plugin registers.
+**`hidePatterns`** takes every pattern of the CoreX theme's `patterns/` folder out of the inserter and out of the
+Site Editor's Patterns screen. The patterns stay registered, so every template and page that uses one still draws
+it, for a visitor and in the editor (the CoreX theme's Services page template, which inserts its services grid
+and process steps, for example). The client theme's own patterns stay offered, and so does one of its own that has
+a CoreX pattern's `Slug:`; so do the patterns an add-on registers (`corex-ui`'s `corex/*` sections). The switch
+is on only when it is `true` in the client theme's own `theme.json` (`corex-core` reads it there, and the CoreX
+theme's own file cannot turn it on), and `make:site` does not write it.
 
-Both change what the editor offers, never what a visitor sees. Every page still renders: a page that needs a
-template only the CoreX theme has (the site's index, say) is drawn with it, a page already set to a hidden custom
-template keeps it, and a CoreX template that inserts a CoreX pattern still shows it. Each switch is on only when
-it is `true` in the client theme's own `theme.json` (`corex-core` reads it there, and the CoreX theme's own file
-cannot turn it on), and `make:site` writes neither.
+The CoreX theme's templates and parts stay in the Site Editor and in the page template choices: the editor finds
+the template a page is drawn with in that same list, so a template taken out of it could no longer be edited.
 
 ### `brand.json`
 
@@ -196,6 +194,27 @@ and delete the scratch folder.
 - A block/component useful across sites → contribute it to the **framework** (`addons/corex-ui` etc.) via a CoreX
   Framework Mode task.
 - A company-specific block/page/template → keep it in `sites/<client>/`.
+
+### A block of the site's own
+
+From the repository root, with one site under `sites/`:
+
+```bash
+wp corex make:block Banner
+cd sites/acme/acme-site
+npm install
+npm run build
+```
+
+`make:block` writes the block into the site plugin, `acme-site/src/Blocks/banner/` with its renderer beside it,
+named `acme-site/banner` and translated in the `acme-site` text domain. The plugin requires `corex-core` and
+boots its provider once CoreX is up; the provider registers every folder of `src/Blocks` that has a
+`block.json`, from `build/blocks` once `npm run build` has run. The plugin's `package.json` has its own
+`@wordpress/scripts`, so it builds from a clean install of its own folder. Build the plugin before packaging:
+`npm run verify:dist` prints a `WARN` line for each block whose `block.json` names a file its folder lacks (the
+compiled `index.js` or `style-index.css`) when the plugin's build holds no folder of that block. It names the
+plugin, the block and the file, and it does not fail the package, so read the output. A block written by hand
+that holds every file it names is not reported.
 
 ## 5. Build & deploy
 

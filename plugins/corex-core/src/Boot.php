@@ -119,13 +119,14 @@ final class Boot
          * Corex is up and every provider has booted.
          *
          * The signal a site plugin needs, and the reason it needs one: Corex boots on
-         * `plugins_loaded` at priority 10, and the generated site starter boots there too. Which
+         * `plugins_loaded` at priority 10, and a site plugin that boots there too races it. Which
          * one WordPress runs first depends on the plugin's directory name, and the plugin that
          * loses reaches {@see Boot::app()} — which throws. Not "silently does nothing": a fatal, on
          * every request, taking the whole site down.
          *
          * Use {@see \Corex\Support\Facades\Corex::onReady()} rather than this hook directly; it
-         * handles the case where Corex has already booted, which this action cannot.
+         * handles the case where Corex has already booted, which this action cannot. The site
+         * plugin `make:site` generates boots its provider through it (spec 135, FR-030).
          *
          * @param Application $app The booted application.
          */

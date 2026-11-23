@@ -13,18 +13,19 @@ use WP_Block_Patterns_Registry;
 defined('ABSPATH') || exit;
 
 /**
- * Unregisters the patterns of the CoreX theme's `patterns/` folder from a child's editor, when the
- * child sets `hidePatterns` (spec 135, FR-021; DECISIONS #664).
+ * Takes the patterns of the CoreX theme's `patterns/` folder out of a child's inserter, when the
+ * child sets `hidePatterns` (spec 135, FR-021; DECISIONS #664, #668).
  *
  * WordPress registers both themes' folders on `init` at 10 (`_register_theme_block_patterns()`), the
- * child's first, and skips a parent pattern whose slug the child's folder already has. The CoreX
- * theme's patterns are known by the `Slug:` headers of its own folder, never by a prefix (`corex-ui`
- * registers `corex/*` patterns too, and they stay), and a slug the child's folder declares is the
- * child's and stays.
+ * child's first, and skips a parent pattern whose slug the child's folder already has. At 11, each
+ * pattern the CoreX theme's folder declares is registered again under its own name with its own
+ * properties and `inserter` set to `false`. It stays registered: a CoreX template that inserts one by
+ * slug still draws it for a visitor and in the editor, while the block inserter and the Site Editor's
+ * Patterns screen leave it out. This runs on every request, so every reader sees the same registry.
  *
- * Only where the editor reads patterns: an admin screen (`init` at 11) and a REST request
- * (`rest_api_init`, which comes after `init`). A visitor's page is drawn with the registry whole,
- * because a CoreX template the child still uses inserts some of these patterns by slug.
+ * The CoreX theme's patterns are known by the `Slug:` headers of its own folder, never by a prefix
+ * (`corex-ui` registers `corex/*` patterns too, and they stay as they are), and a slug the child's
+ * folder declares is the child's and stays as it is.
  */
 final class ParentPatternsHider
 {
@@ -32,16 +33,8 @@ final class ParentPatternsHider
     {
     }
 
-    /** `init` at 11: an admin screen. */
-    public function hideInAdmin(): void
-    {
-        if (is_admin()) {
-            $this->hide();
-        }
-    }
-
-    /** `rest_api_init`, or a direct call: unregister them now. */
-    public function hide(): void
+    /** `init` at 11, after WordPress has registered the theme folders' patterns. */
+    public function hideFromInserter(): void
     {
         if (! $this->switches->hides(ChildThemeSwitches::PATTERNS)) {
             return;
@@ -57,8 +50,13 @@ final class ParentPatternsHider
         $own = self::slugs($child->get_block_patterns());
 
         foreach (self::slugs($parent->get_block_patterns()) as $slug) {
-            if (! in_array($slug, $own, true) && $registry->is_registered($slug)) {
-                $registry->unregister($slug);
+            if (in_array($slug, $own, true)) {
+                continue;
+            }
+
+            $pattern = $registry->get_registered($slug);
+            if (is_array($pattern) && ($pattern['inserter'] ?? true) !== false) {
+                $registry->register($slug, ['inserter' => false] + $pattern);
             }
         }
     }

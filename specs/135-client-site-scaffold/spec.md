@@ -348,9 +348,11 @@ page template choices, and render a page whose template only the parent has.
   block is registered and renders.
 - **FR-037**: The docs MUST say how a site gets a block (`packages/cli/README.md`,
   `packages/build-tools/README.md`, `client-site-workflow.md`, the generated `AGENTS.md` and `README.md`).
-- **FR-038**: `verify:dist` MUST fail when a client plugin in the artifact holds a block source folder
-  (`src/Blocks/*/block.json`) and no `build/blocks`, as it already fails for a theme that ships sources without
-  their compiled output.
+- **FR-038**: `verify:dist` MUST warn, and not fail, for each block of a client plugin in the artifact that names
+  in its `block.json` a `file:./` asset its source folder does not hold and has no built folder of the same name
+  under the plugin's `build/` (in any case of `blocks`). A block written by hand that holds every file it names
+  (Muva's) is not reported. It warns because Perego's pipeline packages its site plugin unbuilt today, and a
+  check that failed would break Perego's deployments the day it took the release (DECISIONS #666).
 
 **Every slice**
 

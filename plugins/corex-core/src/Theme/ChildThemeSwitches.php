@@ -11,28 +11,30 @@ namespace Corex\Theme;
 defined('ABSPATH') || exit;
 
 /**
- * The two switches a child of the CoreX theme sets to keep the CoreX theme's patterns and templates
- * out of its editor (spec 135, FR-021, FR-022 and FR-024; DECISIONS #664):
- * `settings.custom.corex.parent.hidePatterns` and `hideTemplates` in the child's `theme.json`.
+ * The switch a child of the CoreX theme sets to keep the CoreX theme's patterns out of its inserter
+ * (spec 135, FR-021 and FR-024; DECISIONS #664, #668): `settings.custom.corex.parent.hidePatterns`
+ * in the child's `theme.json`.
  *
- * They are read from the child's own file only. WordPress offers no theme JSON of the active theme
+ * It is read from the child's own file only. WordPress offers no theme JSON of the active theme
  * without its parent merged in, and when a child has no `theme.json` it hands the parent's file to
  * `wp_theme_json_data_theme` as the child's: so the file is read from the child's own folder, with
- * WordPress's own JSON reader, and nothing the CoreX theme's `theme.json` says can turn a switch on.
- * Each switch is off unless it is the boolean `true`, and always off for the CoreX theme itself, a
+ * WordPress's own JSON reader, and nothing the CoreX theme's `theme.json` says can turn it on. The
+ * switch is off unless it is the boolean `true`, and always off for the CoreX theme itself, a
  * standalone theme and a child of another theme.
  */
 final class ChildThemeSwitches
 {
+    /** The CoreX theme's folder name, the `Template:` a child of it names. */
+    public const THEME = 'corex';
+
     public const PATTERNS = 'hidePatterns';
-    public const TEMPLATES = 'hideTemplates';
 
     /** @var array<string, array<string, mixed>> The child's own theme.json, by its folder. */
     private array $own = [];
 
     public function isCorexChild(): bool
     {
-        return get_template() === ThemeDefaultPresets::THEME && get_stylesheet() !== get_template();
+        return get_template() === self::THEME && get_stylesheet() !== get_template();
     }
 
     public function hides(string $switch): bool
@@ -62,12 +64,6 @@ final class ChildThemeSwitches
     public function childHas(string $relative): bool
     {
         return is_file(get_stylesheet_directory() . '/' . $relative);
-    }
-
-    /** Whether the CoreX theme's folder holds this theme-relative file. */
-    public function parentHas(string $relative): bool
-    {
-        return is_file(get_template_directory() . '/' . $relative);
     }
 
     /**

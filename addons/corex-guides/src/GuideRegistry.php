@@ -16,10 +16,10 @@ defined('ABSPATH') || exit;
  * ## Why `registerDeferred()` is not optional
  *
  * This registry's whole purpose is to accept contributions from plugins Corex has never heard of,
- * and the ordering makes that hostile. Corex boots on `plugins_loaded` at priority 10; a site plugin
- * following the generated starter (`packages/cli/stubs/starter/plugin.stub`) boots on
- * `plugins_loaded` at priority 10 too. Whichever WordPress happens to load first wins, and it varies
- * with the plugin's directory name.
+ * and the ordering makes that hostile. Corex boots on `plugins_loaded` at priority 10, and a plugin of
+ * its own may boot at any point around it: whichever WordPress loads first wins, and it varies with the
+ * plugin's directory name. (A site plugin `make:site` generates boots through `Corex::onReady`, spec 135,
+ * but a registry cannot count on every contributor doing so.)
  *
  * So nothing is resolved until something reads the registry, which is an admin request — long after
  * every plugin has loaded. This is the shape of `Corex\Config\Data\DataRegistry`, and it exists
