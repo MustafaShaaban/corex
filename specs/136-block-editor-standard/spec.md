@@ -65,7 +65,8 @@ CoreX's blocks do not meet it, in three ways that were measured on `main` on 202
    go with G-010 in spec 149. US-BLK-09 (a video in a dialog) stays in its release; the modal holding blocks is
    what it will be built on. The trail of the breadcrumbs is G-014 (spec 144). Width, height and responsive
    sizes for team and gallery images are G-016 (spec 150). Of the G-011 row's wishes, child blocks inside the
-   hero and a slideshow background are not taken: the owner's decision 18 lists the scope and names neither.
+   hero and a slideshow background are not taken: the owner's decision 18 lists the scope and names neither. Gap
+   G-051 later added a slot for child blocks in the hero (DECISIONS #679); the slideshow stays out.
 7. **A container block keeps its name and migrates its content** (#675): the section "Blocks that hold blocks".
 
 ## The parity contract
@@ -313,6 +314,11 @@ And, from G-011 and the Blackstone decision 18:
 14. While a video plays, a Pause button is shown on the hero; pressing it stops the video and it becomes Play.
     With scripts off no video and no button is drawn.
 
+15. A hero can hold child blocks in one slot inside its media and scrim, where its title and text sit, so a
+    site's own block (Blackstone's headline scenes) can be part of the hero. No block is allowed there unless a
+    site names it. With the slot empty the hero draws exactly as without it. The scrim, the contrast of
+    criterion 4 and the Pause button's place and clearance hold over what the slot holds. (Gap G-051.)
+
 **Independent Test**: The stories' test cases; then, with a throttled connection and with reduced motion, the
 network log shows no request for the video; the LCP entry is the poster.
 
@@ -448,6 +454,11 @@ network log shows no request for the video; the LCP entry is the poster.
   the video's addresses (WebM, MP4 or both) as data; the view script adds the video element only when every
   condition allows it.
 - **FR-056**: The hero's view script MUST be enqueued by the renderer, only for a hero that has a video.
+- **FR-057**: The hero MUST hold child blocks in one slot, placed as the approved addendum board D-3a shows,
+  and the renderer MUST print them there. No block is allowed in the slot by default; a site names the blocks
+  it allows through WordPress's `allowedBlocks` for `corex/hero`. A hero saved with no children MUST render
+  exactly as it does without the slot, with no deprecation. User Story 7 criterion 15 (gap G-051; DECISIONS
+  #679).
 
 ### Every slice (the gap programme's rules)
 
@@ -479,6 +490,7 @@ approved by the owner before they are built. Each approval is recorded in `desig
 |---|---|---|
 | D-1 | Tabs with "Advance by itself" on: the Pause and Play button and its place, at desktop and phone width | 6b |
 | D-2 | A modal and a drawer holding a heading, a list, an image and a form; the drawer itself, which the kit does not have; phone width | 8 |
+| D-3a | The hero holding a child block in its slot: where the slot sits, the scrim and the Pause button's clearance over it, phone width | 9 (FR-057 only) |
 | D-3 | The hero: Centred and Split, text at the start, media behind with each scrim strength, the second action as outline and as link, the video's Pause button, phone width, Arabic | 9 |
 
 The kit's rule stands in all three: nothing opens, moves or plays by itself unless a site turns it on, never under
@@ -553,7 +565,7 @@ One pull request each, test first, merged into `main` on green. "Rests on" names
 | 6b | Tabs advance by themselves, with Pause | FR-035 | 6a, D-1 approved | VI | nothing |
 | 7 | Carousel slides hold blocks | FR-036, FR-039 | 3 | VI, VIII | nothing |
 | 8 | Modal and drawer hold blocks | FR-037 to FR-039 | 3, D-2 approved | VI, VIII | nothing |
-| 9 | The hero | FR-050 to FR-056 | 3, D-3 approved | V, VI, VIII | nothing |
+| 9 | The hero | FR-050 to FR-057 | 3, D-3 approved (approved 2026-11-23), D-3a approved for FR-057; without D-3a it ships without FR-057, which then follows as its own slice | V, VI, VIII | nothing |
 
 Slices 1, 3, 4, 5, 6a and 7 show nothing that is not already approved or WordPress's own, and are built while
 D-1 to D-3 wait for the owner. Slices 2a, 2b, 5, 6a and 7 change what a visitor may see and run the full UI

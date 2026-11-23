@@ -22189,3 +22189,27 @@ from the pictures of 21 artboards with a button ("Approve hero").
 
 *Owed to the design system before slice 9 is built:* three scrim tokens, a pause and a play icon, a 44px minimum
 for the standalone link in the hero, and three Arabic fixes the drawing made to follow the kit's written rules.
+
+## #679 -- The hero holds child blocks in one slot (gap G-051); the slideshow stays out
+
+**Date:** 2026-11-23. **Spec:** 136, slice 9 (G-051, with G-011). **Decided:** by the gap programme's
+coordinating session with the spec 136 session, under the owner's request of 2026-11-23 that features a client
+site needs are built in CoreX. The owner's approval of the addendum board D-3a is also his yes to this decision.
+
+**What it changes.** #674 said: "G-011's row also wishes for child blocks inside the hero and a slideshow
+background. Neither is taken." This reverses that bullet for child blocks only. The slideshow background stays
+out. #674 is not rewritten; this entry stands beside it.
+
+**Why.** The Blackstone home hero (HOM-1) holds a site block, its headline scenes, inside the hero's media and
+scrim (gap G-051). Without a slot the site would need a hero block of its own, which duplicates CoreX's.
+
+**Decided.**
+- One slot for child blocks, inside the hero's media and scrim, where the approved addendum board D-3a places it.
+- No block is allowed in it by default. A site names the blocks it allows through WordPress's `allowedBlocks`
+  for `corex/hero`.
+- The block follows #675: `save` returns its inner blocks and the renderer prints them in the slot. A hero saved
+  with no children stays valid and renders exactly as before, so no deprecation is needed and Muva and Perego
+  are not changed.
+- The scrim, the contrast of the approved drawing and the Pause button's place and clearance hold over what the
+  slot holds; the motion of a site's own block is the site's.
+- If D-3a is not approved when slice 9 starts, slice 9 ships without the slot and G-051 follows as its own slice.
