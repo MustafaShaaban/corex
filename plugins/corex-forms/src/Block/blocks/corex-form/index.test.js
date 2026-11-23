@@ -17,7 +17,7 @@ const DisabledMock = ( { children } ) => children;
 const PlaceholderMock = ( { children } ) => children;
 const SpinnerMock = () => null;
 const NoticeMock = () => null;
-const mockChoices = { current: { status: 'loading' } };
+const mockChoices = { current: { status: 'loading' }, asked: [] };
 
 jest.mock( './style.scss', () => ( {} ), { virtual: true } );
 jest.mock( '@wordpress/blocks', () => ( { registerBlockType: jest.fn() } ), {
@@ -60,7 +60,11 @@ jest.mock(
 	{ virtual: true }
 );
 jest.mock( './choices', () => ( {
-	useChoices: () => mockChoices.current,
+	useChoices: ( source ) => {
+		mockChoices.asked.push( source );
+
+		return mockChoices.current;
+	},
 } ) );
 
 import './index.js';
@@ -142,6 +146,58 @@ describe( 'form block: what a saved block keeps', () => {
 
 		expect( ssr.props.attributes.formSlug ).toBe( 'contact' );
 		expect( chooserOf( element ) ).toBeUndefined();
+	} );
+} );
+
+describe( 'form block: the source its fields show', () => {
+	beforeEach( () => {
+		mockChoices.current = READY( [
+			{ slug: 'contact', label: 'Contact' },
+		] );
+		mockChoices.asked = [];
+	} );
+
+	test( "a block saved with block.json's defaults shows the registered contact form it prints, and changes nothing", () => {
+		const setAttributes = jest.fn();
+		const element = edit( DEFAULTS, setAttributes );
+		const [ source, form ] = collect( element, SelectControlMock );
+
+		expect( source.props.value ).toBe( 'registered' );
+		expect( form.props.label ).toBe( 'Form' );
+		expect( form.props.value ).toBe( 'contact' );
+		expect( mockChoices.asked ).toEqual( [ 'registered' ] );
+		expect( setAttributes ).not.toHaveBeenCalled();
+	} );
+
+	test( 'a block naming a flow shows its saved source', () => {
+		mockChoices.current = READY( [
+			{ id: 7, name: 'Contact', state: 'published' },
+		] );
+		const [ source, flow ] = collect(
+			edit( { ...DEFAULTS, flowId: 7 } ),
+			SelectControlMock
+		);
+
+		expect( source.props.value ).toBe( 'flow' );
+		expect( flow.props.value ).toBe( '7' );
+		expect( mockChoices.asked ).toEqual( [ 'flow' ] );
+	} );
+
+	test( 'changing the source clears every way of naming a form, the flow slug too', () => {
+		const setAttributes = jest.fn();
+		const [ source ] = collect(
+			edit( { ...DEFAULTS, flowSlug: 'contact-us' }, setAttributes ),
+			SelectControlMock
+		);
+
+		source.props.onChange( 'registered' );
+
+		expect( setAttributes ).toHaveBeenCalledWith( {
+			source: 'registered',
+			flowId: 0,
+			flowSlug: '',
+			formSlug: '',
+		} );
 	} );
 } );
 

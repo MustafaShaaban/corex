@@ -43,17 +43,19 @@ const NETWORKS = [
 ];
 
 /**
- * The networks the bar shows: the chosen ones in the renderer's order, or all when none is.
+ * The networks the bar shows, as SocialShareRenderer::selectedNetworks() picks them: all of them
+ * when the attribute is missing or empty, otherwise the known ones it names, in the renderer's
+ * order (none, when it names only networks the renderer does not know).
  *
- * @param {Array<string>} selected The block's `networks`.
+ * @param {Array<string>|undefined} networks The block's `networks`.
  * @return {Array<Object>} The networks to draw.
  */
-function shown( selected ) {
-	const chosen = NETWORKS.filter( ( network ) =>
-		selected.includes( network.id )
-	);
+function shown( networks ) {
+	if ( ! Array.isArray( networks ) || networks.length === 0 ) {
+		return NETWORKS;
+	}
 
-	return chosen.length > 0 ? chosen : NETWORKS;
+	return NETWORKS.filter( ( network ) => networks.includes( network.id ) );
 }
 
 function Edit( { attributes, setAttributes } ) {
@@ -85,7 +87,7 @@ function Edit( { attributes, setAttributes } ) {
 			<span className="corex-social-share__label">
 				{ __( 'Share', 'corex' ) }
 			</span>
-			{ shown( selected ).map( ( network ) => (
+			{ shown( attributes.networks ).map( ( network ) => (
 				// The page's link shares the post's address; in the editor it leads nowhere.
 				// eslint-disable-next-line jsx-a11y/anchor-is-valid
 				<a

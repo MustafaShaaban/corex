@@ -63,6 +63,28 @@ function hasForm( { flowId, flowSlug, formSlug } ) {
 }
 
 /**
+ * The source the block's fields show: the one its form comes from. A block saved with block.json's
+ * defaults says `flow` and names no flow, yet prints the registered form its `formSlug` names (the
+ * contact form), so its fields show that form. Only what is shown changes; no attribute is set.
+ *
+ * @param {Object} attributes          The block's attributes.
+ * @param {string} attributes.source   The saved source.
+ * @param {number} attributes.flowId   The flow's id; 0 for none.
+ * @param {string} attributes.flowSlug The flow's slug; '' for none.
+ * @param {string} attributes.formSlug The registered form's slug; '' for none.
+ * @return {string} `flow` or `registered`.
+ */
+function sourceOf( { source, flowId, flowSlug, formSlug } ) {
+	const namesFlow =
+		Number( flowId || 0 ) > 0 || String( flowSlug || '' ).trim() !== '';
+	if ( ! namesFlow && String( formSlug || '' ).trim() !== '' ) {
+		return 'registered';
+	}
+
+	return source || 'flow';
+}
+
+/**
  * The two selects that choose the form: its source, then the flow or the registered form. Drawn
  * in the side panel always, and on the canvas while no form is chosen.
  *
@@ -73,7 +95,7 @@ function hasForm( { flowId, flowSlug, formSlug } ) {
  * @return {Element} The selects; the second waits for the choices.
  */
 function formFields( { attributes, setAttributes, choices } ) {
-	const source = attributes.source || 'flow';
+	const source = sourceOf( attributes );
 	const items = choices.status === 'ready' ? choices.items : [];
 	const options =
 		source === 'flow'
@@ -111,9 +133,12 @@ function formFields( { attributes, setAttributes, choices } ) {
 					},
 				] }
 				onChange={ ( nextSource ) =>
+					// Every way of naming a form is cleared: the renderer goes to a flow whenever
+					// `flowSlug` is set.
 					setAttributes( {
 						source: nextSource,
 						flowId: 0,
+						flowSlug: '',
 						formSlug: '',
 					} )
 				}
@@ -185,7 +210,7 @@ function choicesNotice( source, choices ) {
 
 function Edit( { attributes, setAttributes } ) {
 	const blockProps = useBlockProps();
-	const source = attributes.source || 'flow';
+	const source = sourceOf( attributes );
 	const choices = useChoices( source );
 	const fields = formFields( { attributes, setAttributes, choices } );
 

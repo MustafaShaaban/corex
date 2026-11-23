@@ -78,6 +78,22 @@ describe( 'social share block: drawn in place (FR-018)', () => {
 		).toBe( 5 );
 	} );
 
+	test( 'with no networks attribute at all it draws them all, as the page does', () => {
+		const bar = draw( {} );
+
+		expect(
+			bar.querySelectorAll( '.corex-social-share__link' ).length
+		).toBe( 5 );
+	} );
+
+	test( 'with only networks it does not know it draws none, as the page does', () => {
+		const bar = draw( { networks: [ 'mastodon' ] } );
+
+		expect(
+			bar.querySelectorAll( '.corex-social-share__link' ).length
+		).toBe( 0 );
+	} );
+
 	test( 'the copy button shows, as a browser with a clipboard shows it; the device button stays hidden', () => {
 		const bar = draw( { networks: [ 'x' ] } );
 

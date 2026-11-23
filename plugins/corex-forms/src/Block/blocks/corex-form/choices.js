@@ -1,6 +1,6 @@
 /**
- * The forms `corex/form` can name, as its chooser loads them (spec 136, FR-020): the published
- * flows, or the registered forms. A list that loaded, even empty, is told from one that failed,
+ * The forms `corex/form` can name, as its chooser loads them (spec 136, FR-020): every flow ever
+ * published (closed and expired ones too), or the registered forms. A list that loaded, even empty, is told from one that failed,
  * and a person who may not list the forms (the flows need `corex_manage_forms`) is told so.
  */
 import { useEffect, useState } from '@wordpress/element';
@@ -18,10 +18,9 @@ const REFUSED_CODES = [ 'forbidden', 'rest_forbidden' ];
  * @return {Promise<Object>} `{status: 'ready', items}`, or `{status: 'failed', forbidden, message}`.
  */
 export function loadChoices( source ) {
-	const path =
-		source === 'flow'
-			? '/corex/v1/flows?state=published'
-			: '/corex/v1/forms';
+	// Every flow, unfiltered: normalizePublishedFlows drops only the drafts, so a saved block that
+	// names a closed or expired flow still finds it, as the flow blocks' editor does.
+	const path = source === 'flow' ? '/corex/v1/flows' : '/corex/v1/forms';
 
 	return apiFetch( { path } ).then(
 		( response ) => ( {

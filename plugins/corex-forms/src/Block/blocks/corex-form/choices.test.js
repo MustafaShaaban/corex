@@ -52,23 +52,24 @@ beforeEach( () => {
 } );
 
 describe( 'loadChoices (FR-020)', () => {
-	test( 'the published flows, with drafts left out', async () => {
+	test( 'every flow ever published, closed and expired ones too, with drafts left out', async () => {
+		const closed = { id: 9, name: 'Last year', state: 'closed' };
 		apiFetch.mockResolvedValue( {
 			data: {
 				flows: [
 					{ id: 7, name: 'Contact', state: 'published' },
 					{ id: 8, name: 'Draft', state: 'draft' },
+					closed,
 				],
 			},
 		} );
 
 		await expect( loadChoices( 'flow' ) ).resolves.toEqual( {
 			status: 'ready',
-			items: [ { id: 7, name: 'Contact', state: 'published' } ],
+			items: [ { id: 7, name: 'Contact', state: 'published' }, closed ],
 		} );
-		expect( apiFetch ).toHaveBeenCalledWith( {
-			path: '/corex/v1/flows?state=published',
-		} );
+		// No state filter: a saved block naming a closed or expired flow still finds it.
+		expect( apiFetch ).toHaveBeenCalledWith( { path: '/corex/v1/flows' } );
 	} );
 
 	test( 'the registered forms; an empty list is ready, not failed', async () => {
