@@ -155,7 +155,7 @@ file `corex-gap-programme-rules.md` (side-session notes of the Blackstone sessio
 | G-043 | Medium | The client site workflow has no speed, accessibility or secret checks | then | 152 | | | | open |
 | G-044 | Low | No uninstall routine | then | 152 | | | | open |
 | G-045 | Low | Docs describe an `I18nHandler` and an Interactivity rule the code does not have | then | 152 | | | | open |
-| G-048 | Medium | A child of the CoreX theme cannot hide the parent's patterns and templates from the editor | 1 | 135 | 6 (after slice 5) | | | open: added to spec 135 on 2026-11-23 (DECISIONS #664); rests on nothing the tag lacks |
+| G-048 | High | A child of the CoreX theme cannot hide the parent's patterns and templates from the editor | 1 | 135 | 6 (after slice 5) | | | open: added to spec 135 on 2026-11-23 (DECISIONS #664); rests on nothing the tag lacks |
 | G-051 | High | The hero takes no child block, so a site block cannot sit inside its media and scrim | 1 | 136 | 9 (with G-011; waits on the addendum board D-3a; without it, its own slice after 9) | | | spec written (DECISIONS #679) |
 
 State is one of: open, specced (the spec is on `main`), built (every slice on `main`), released (in the tag
