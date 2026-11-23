@@ -22310,24 +22310,39 @@ already rejected in #671.
 `addons/corex-assistant/blocks/assistant/block.json` does not exist at `v0.48.1`, so its kind cannot be carried;
 the starter's `provider.stub` names `Corex\Blocks\BlockWrapper`, which slice 1 added after the tag.
 
-## #680 -- A chosen text colour reaches every text of a section block; its cards give way, its controls keep their fill
+## #680 -- A chosen text colour reaches a section block's text, links and headings; its cards give way, its buttons keep their fill
 
-**Date:** 2026-11-23. **Spec:** 136, slice 2a (FR-007, FR-008; gap G-005). **Decided:** by the spec 136 session.
+**Date:** 2026-11-23. **Spec:** 136, slice 2a (FR-007, FR-008; gap G-005). **Decided:** by the spec 136 session,
+after corex-reviewer's round.
 
-- Every block a person can insert (29 of 30: `corex/assistant` has `inserter: false`) supports a top and bottom
-  margin. The 13 section blocks, stat and alert support padding by axis (vertical, horizontal) only, so the two
-  sides of a line stay equal (constitution VIII). The section blocks and stat support a background and a text
-  colour, with no gradient and no link colour.
-- A chosen text colour is applied by one `.has-text-color` rule at the end of each of those 14 sheets: every
-  element the sheet colours, every heading (spec 134's rule that headings follow their section, #635) and the
-  list blocks' title links take `color: inherit`.
+- Every block a person can insert supports a top and bottom margin: the 29 `block.json` blocks but the assistant
+  (`inserter: false`), and `corex/account`, registered in code. The check reads WordPress's registry, so a child
+  block added later is held to it. The 13 section blocks, stat and alert support padding by axis (vertical,
+  horizontal) only, so the two sides of a line stay equal (constitution VIII). The section blocks and stat support
+  a background and a text colour, with no gradient and no link colour.
+- A chosen text colour is applied by one rule at the end of each of those 14 sheets, written on
+  `.wp-block-corex-<slug>.has-text-color`: the page root and the editor's wrapper both carry that class, while the
+  server-rendered preview inside the editor does not (FR-006a). Every element the sheet colours, every heading
+  (spec 134's rule that headings follow their section, #635) and every link but a button drawn as a link take
+  `color: inherit`, as WordPress does for its own paragraphs.
 - Under it, inner cards and panels (team member, posts, gallery and accordion items, jobs and projects items, the
-  tab panel) become transparent, so the chosen text sits on the background it was chosen against. Controls keep
-  their own fill (the hero's, cta's and pricing's buttons, the carousel's arrows and dots, the newsletter's field,
-  button and messages, the tab that is shown), so a control still reads as one and the open tab stays marked.
+  tab panel) become transparent, so the chosen text sits on the background it was chosen against. Buttons keep
+  their fill (the hero's, cta's and pricing's buttons, the carousel's arrows and dots, the newsletter's field and
+  button); the newsletter's messages take the chosen colour, their words saying what happened. The shown tab is
+  marked by a bottom border in `currentcolor`, not by colour alone.
+- Five blocks whose text sat on the block itself (cta, hero, pricing, testimonial, stat) set their default text
+  colour on the root and their main text inherits it, so WordPress's contrast checker reads the colour a visitor
+  sees when only a background is chosen. Accent text keeps its own colour. Card blocks keep their text colour on
+  the card, where it is read.
 - The root needs no rule: WordPress's colour classes are `!important` and a custom colour is an inline style, so
   both beat a sheet's own background. A test refuses a sheet that marks a colour `!important`.
-- With nothing chosen, every block prints and draws exactly as before. Tabs (slice 6a) and carousel (slice 7) may
-  restyle their parts of this.
+- With nothing chosen, every block prints and draws exactly as before. Known limits: a button on a background of
+  its own colour (the cta's on surface, the pricing's on primary, the carousel's dots) loses its edge; a heading
+  inside a nested block takes the outer section's chosen colour over its own sheet's, which slices 5 to 7 meet
+  when blocks hold blocks.
 - The `make:block` stubs and the starter's example block declare the margin too, so a generated block passes the
   same gate.
+
+*For the maintenance line:* this slice rests on slice 3 (#506): the gate imports `@corex/build-tools/parity`, and
+the `supports` lines and stubs it edits sit beside slice 3's `corex.editor` keys. Slice 3's commit is
+cherry-picked first. `ProfileServiceProvider.php` changed after the tag (slice 1 note).
