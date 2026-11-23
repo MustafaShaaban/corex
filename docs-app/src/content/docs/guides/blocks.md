@@ -3,14 +3,23 @@ title: Create a block (CLI)
 description: Scaffold a complete, registered, working dynamic block with one command.
 ---
 
-Every Corex block is **dynamic** — its markup is produced server-side by a PHP renderer,
-and the editor previews that render with `<ServerSideRender>`. One command scaffolds the
-whole thing.
+Every Corex block is **dynamic**: its markup is produced server-side by a PHP renderer. How
+the editor draws it follows one rule (DECISIONS #656):
+
+- **A static block is edited in place.** Its editor draws the same elements as the page, and
+  its text is typed on the canvas. Its `parity.json` proves it: two tests draw the block in
+  the editor and on the page and compare both trees with it.
+- **A block that shows records keeps a server render.** A list of posts, a trail or a form
+  previews its server render with `<ServerSideRender>`, inside the block's wrapper and inert.
+
+Every `block.json` says which, in `corex.editor` (`in-place` or `records`), and a test fails a
+block that breaks its rule. One command scaffolds either shape.
 
 ## Scaffold
 
 ```bash
-wp corex make:block TeamMember --path=wp
+wp corex make:block TeamMember --path=wp             # edited in place
+wp corex make:block LatestNews --records --path=wp   # shows records
 ```
 
 This writes, under your app's `Blocks/` directory:
@@ -19,9 +28,13 @@ This writes, under your app's `Blocks/` directory:
 Blocks/
   team-member/
     block.json     # apiVersion 3, category "corex", editorScript + style wired,
-                   #   corex.renderer → App\Blocks\TeamMemberRenderer
-    index.js       # registerBlockType + <ServerSideRender>; imports style.scss
-    style.scss     # token-only, RTL-correct
+                   #   a title attribute, the anchor supported,
+                   #   corex.renderer → App\Blocks\TeamMemberRenderer,
+                   #   corex.editor → in-place (records with --records)
+    index.js       # registerBlockType; the title typed on the canvas with RichText
+                   #   (--records: <ServerSideRender> inside <Disabled>)
+    parity.json    # the tree the editor and the page both draw (not with --records)
+    style.scss     # theme.json tokens and logical properties only
   TeamMemberRenderer.php   # implements Corex\Blocks\BlockRenderer
 ```
 
@@ -36,19 +49,31 @@ npm run build       # compile index.js + style.scss → build/blocks/
 ```
 
 After building, the block registers with an editor script and renders server-side. The
-PHP renderer is where you produce escaped markup:
+PHP renderer is where you produce escaped markup. It prints one root element; what an editor
+sets on the block (its anchor, an extra class) is added to that root for you:
 
 ```php
 final class TeamMemberRenderer implements BlockRenderer
 {
     public function render(array $attributes, string $content, object $block): string
     {
-        return sprintf('<div class="%s">%s</div>',
+        $title = trim((string) ($attributes['title'] ?? ''));
+
+        if ($title === '') {
+            return '';
+        }
+
+        return sprintf(
+            '<div class="%1$s"><p class="%1$s__title">%2$s</p></div>',
             esc_attr('corex-team-member'),
-            esc_html__('Team Member', 'corex'));
+            wp_kses_post($title)
+        );
     }
 }
 ```
+
+When you add an element to the renderer, draw it in `index.js` too and add it to
+`parity.json`; the parity tests fail until all three agree.
 
 ## Why a build is required
 

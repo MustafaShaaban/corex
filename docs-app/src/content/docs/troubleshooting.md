@@ -9,7 +9,7 @@ description: The real errors and their fixes.
 registration for it — so WordPress doesn't recognise the type in the editor.
 
 **Fix.** Build the assets. Every Corex block ships an `index.js` (which calls
-`registerBlockType` and previews via `<ServerSideRender>`) that must be compiled:
+`registerBlockType` and draws the block in the editor) that must be compiled:
 
 ```bash
 npm install

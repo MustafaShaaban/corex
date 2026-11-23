@@ -54,7 +54,9 @@ function editorParityProblem( folder ) {
 	const markup = renderEdit( settings.edit, {
 		metadata,
 		attributes: fixture.attributes || {},
-		context: needs.includes( 'post' ) ? { postId: 1, postType: 'post' } : {},
+		context: needs.includes( 'post' )
+			? { postId: 1, postType: 'post' }
+			: {},
 	} );
 	const { tree, errors } = parityTree( markup, { prefix: fixture.prefix } );
 	const expected = normalizeTree( fixture.tree );

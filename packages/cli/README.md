@@ -56,24 +56,45 @@ wp corex make:repository Invoice          # → InvoiceRepository
 wp corex make:service Billing --force     # overwrite if it exists
 ```
 
-### `make:block` — a complete dynamic block
+### `make:block`: a complete dynamic block
 
 ```bash
-wp corex make:block TeamMember
+wp corex make:block TeamMember             # a static block, edited in place
+wp corex make:block LatestNews --records   # a block that shows records
 ```
 
-Scaffolds a **complete, registered, working dynamic block** — the same shape the
-build pipeline expects (see `packages/build-tools/README.md`):
+Scaffolds a **complete, registered, working dynamic block** in the shape the build
+pipeline expects (see `packages/build-tools/README.md`), by the rule of DECISIONS #656:
+
+- **By default, a static block edited in place.** Its editor draws the same elements as
+  its renderer prints on the page, and its title is typed on the canvas; it never
+  imports the server render. It comes with its `parity.json`, which the parity tests
+  compare the editor's tree and the page's with, and declares `"editor": "in-place"`.
+- **With `--records`, a block that shows records it does not hold** (a list, a trail, a
+  form). Its editor previews the server render inside the block's wrapper, inert, and
+  it declares `"editor": "records"`. It has no `parity.json`.
 
 ```
 <base>/Blocks/
   team-member/
     block.json     # apiVersion 3, category "corex", editorScript + style wired,
-                   #   corex.renderer → App\Blocks\TeamMemberRenderer
-    index.js       # registerBlockType + <ServerSideRender>; imports style.scss
-    style.scss     # token-only, RTL-correct
-  TeamMemberRenderer.php   # implements Corex\Blocks\BlockRenderer (server render)
+                   #   a `title` attribute, supports html: false and anchor,
+                   #   corex.renderer → App\Blocks\TeamMemberRenderer,
+                   #   corex.editor → in-place (records with --records)
+    index.js       # registerBlockType; useBlockProps + RichText for the title
+                   #   (--records: <ServerSideRender> inside <Disabled>)
+    parity.json    # the tree both draw (not with --records)
+    style.scss     # theme.json tokens and logical properties only
+  TeamMemberRenderer.php   # implements Corex\Blocks\BlockRenderer: one root element
 ```
+
+The renderer prints one root element with the block's class and never calls
+`get_block_wrapper_attributes()`: the block registrar merges what an editor set on the
+block (its anchor, an extra class) into that root. Every string a person reads goes
+through the translation functions with the configured text domain. The generated
+block passes the gate (`tests/block-editor-kinds.test.js`), which fails a block whose
+kind is missing, an in-place block without its `parity.json` or with a server render,
+and a records block without one.
 
 The renderer PHP lives **beside** the block folder in one `Blocks/` directory (the
 corex-ui convention) — a single dir name also avoids a `blocks/`-vs-`Blocks/`
@@ -254,4 +275,6 @@ Single-class generators extend `Corex\Cli\Generators\Generator` (a stub name, a
 suffix, a sub-path, and the placeholder values) and pair with a `*.stub` under
 `packages/cli/stubs/`. Register the instance in `CliServiceProvider::boot()`'s
 `make:*` map. The multi-file block path is `BlockScaffolder` + the stub set under
-`packages/cli/stubs/block/`.
+`packages/cli/stubs/block/`: the in-place shape there, the `--records` shape's own
+`block.json`, `index.js` and renderer under `packages/cli/stubs/block/records/`, and one
+`style.scss` for both.

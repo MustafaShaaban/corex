@@ -227,7 +227,7 @@ composer install && npm install && npm run build
 wp corex make:model Product --cpt --rest --ability
 wp corex make:service ProductService
 wp corex make:controller ProductController
-wp corex make:block product-grid --dynamic
+wp corex make:block product-grid --records
 ```
 Declare fields on the model (works with or without ACF), implement the service, register a connector so editors bind blocks to fields.
 

@@ -224,7 +224,7 @@
     {
       "path": "docs-app/src/content/docs/faq.md",
       "lines": [
-        29
+        30
       ],
       "topics": [
         "brand.json",
@@ -260,6 +260,15 @@
       ],
       "topics": [
         "generated-properties"
+      ]
+    },
+    {
+      "path": "docs-app/src/content/docs/guides/blocks.md",
+      "lines": [
+        37
+      ],
+      "topics": [
+        "theme-authority"
       ]
     },
     {
@@ -357,10 +366,12 @@
     {
       "path": "packages/cli/README.md",
       "lines": [
-        236
+        87,
+        257
       ],
       "topics": [
-        "brand.json"
+        "brand.json",
+        "theme-authority"
       ]
     },
     {

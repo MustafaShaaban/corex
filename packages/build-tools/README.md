@@ -13,10 +13,21 @@ needs two things the editor can only get from JavaScript:
 
 1. **Editor registration.** Without `registerBlockType()` running in the editor,
    WordPress shows *"Your site doesn't include support for this block."* Each block
-   ships an `index.js` that registers the type and previews the server render with
-   [`<ServerSideRender>`](https://developer.wordpress.org/block-editor/reference-guides/packages/packages-server-side-render/)
-   — so the editor preview is byte-for-byte the front-end output, never a second
-   implementation to keep in sync.
+   ships an `index.js` that registers the type and draws the block in the editor,
+   by the rule of DECISIONS #656:
+   - **A static block is edited in place.** Its `edit` draws the same elements as
+     its renderer prints on the page, and its text is typed on the canvas, never in
+     the side panel. Its `parity.json` proves it: the parity tests compare the
+     editor's tree and the page's with it (below). It never imports
+     `@wordpress/server-side-render`.
+   - **A block that shows records keeps a server render.** A list of posts, a trail
+     or a form shows records it does not hold, so its editor previews the server
+     render with
+     [`<ServerSideRender>`](https://developer.wordpress.org/block-editor/reference-guides/packages/packages-server-side-render/)
+     inside the block's own wrapper, inert (it cannot be clicked or submitted).
+
+   `wp corex make:block <Name>` generates the first shape, `--records` the second
+   (`packages/cli/README.md`).
 2. **Compiled, conditional assets.** SCSS compiles to a minified, **auto-RTL**
    stylesheet; `block.json` loads it only where the block renders (Principle VI).
 
@@ -37,8 +48,10 @@ A block folder contains:
 ```
 my-block/
   block.json     # apiVersion 3; editorScript: file:./index.js;
-                 #   style: file:./style-index.css; corex.renderer: <FQCN>
+                 #   style: file:./style-index.css; corex.renderer: <FQCN>;
+                 #   corex.editor: in-place | records | none | pending
   index.js       # editor registration; imports ./style.scss
+  parity.json    # an in-place block's tree, compared by the parity tests
   style.scss     # token-only, logical properties (RTL-correct)
   view.js        # OPTIONAL front-end behaviour (forms submit, Interactivity)
 ```

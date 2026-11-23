@@ -16,7 +16,8 @@ block. Server + client validation come from the one schema. See
 
 ## How do I add a new block?
 
-`wp corex make:block <Name>` then `npm run build`. The block is dynamic and registered.
+`wp corex make:block <Name>` then `npm run build`. The block is dynamic, registered and edited
+in place; add `--records` for a block that shows records and previews its server render.
 See [Create a block](/guides/blocks/).
 
 ## How do I query data without N+1?

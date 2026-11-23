@@ -1,14 +1,30 @@
 /**
- * {{ name }} example block — editor registration. The block is server-rendered (save returns
- * null); the front-end markup comes from ExampleRenderer. Part of the --starter example;
- * delete with the rest of it (REMOVE-EXAMPLE.md). Run `npm run build` to compile.
+ * {{ name }} example block: editor registration. The block lists records it does not hold,
+ * so the editor previews ExampleRenderer's server render inside the block's own wrapper,
+ * inert (DECISIONS #656). Save returns null. Part of the --starter example; delete with the
+ * rest of it (REMOVE-EXAMPLE.md). Run `npm run build` to compile.
  */
 import { registerBlockType } from '@wordpress/blocks';
-import { __ } from '@wordpress/i18n';
+import { useBlockProps } from '@wordpress/block-editor';
+import { Disabled } from '@wordpress/components';
+import ServerSideRender from '@wordpress/server-side-render';
 import metadata from './block.json';
 import './style.scss';
 
+function Edit( { attributes } ) {
+	return (
+		<div { ...useBlockProps() }>
+			<Disabled>
+				<ServerSideRender
+					block={ metadata.name }
+					attributes={ attributes }
+				/>
+			</Disabled>
+		</div>
+	);
+}
+
 registerBlockType( metadata.name, {
-	edit: () => __( 'Example block — rendered on the front end by ExampleRenderer.', '{{ text_domain }}' ),
+	edit: Edit,
 	save: () => null,
 } );

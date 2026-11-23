@@ -137,6 +137,33 @@ it('names the slice files in the removal guide', function () {
         ->and($guide)->toContain('src/Blocks/example');
 });
 
+it('spec 136 FR-014: the example block declares its kind and its anchor, and previews its records inert', function () {
+    $base = starterBase();
+    starterScaffolder()->scaffold('Acme', $base, ['starter' => true]);
+    $block = $base . '/acme-site/src/Blocks/example';
+
+    $json = json_decode((string) file_get_contents($block . '/block.json'), true);
+    $js = (string) file_get_contents($block . '/index.js');
+
+    expect($json['corex']['editor'])->toBe('records')
+        ->and($json['supports'])->toBe(['html' => false, 'anchor' => true])
+        ->and($js)->toContain("import ServerSideRender from '@wordpress/server-side-render';")
+        ->toContain('<div { ...useBlockProps() }>')
+        ->toContain('<Disabled>');
+});
+
+it('spec 136 FR-001, FR-014: the example block\'s markup passes through the BlockWrapper from the container', function () {
+    $base = starterBase();
+    starterScaffolder()->scaffold('Acme', $base, ['starter' => true]);
+
+    $provider = (string) file_get_contents($base . '/acme-site/src/AcmeSiteServiceProvider.php');
+
+    expect($provider)->toContain('use Corex\\Blocks\\BlockWrapper;')
+        ->toContain('$container->has(BlockWrapper::class)')
+        ->toContain('$container->make(BlockWrapper::class)')
+        ->toContain('$wrapper->apply($renderer->render())');
+});
+
 it('refuses a name that normalises to the reserved corex identity', function () {
     starterScaffolder()->scaffold('Corex', starterBase(), ['starter' => true]);
 })->throws(InvalidNameException::class);

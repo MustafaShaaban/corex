@@ -22149,3 +22149,39 @@ optional seam later") and #657.
 The two header patterns that hold a raw HTML search get WordPress's Search block in the bar and in the phone menu.
 The one search overlay with its keyboard shortcut is US-NAV-09 (R4.1) and is not built here. Headers saved earlier
 keep the raw search and the script that opens it. Blackstone's header has no search (its decision 6).
+
+## #678 -- How the parity standard is built: shared helpers in build-tools, stand-ins that draw what parity compares, two shapes from make:block
+
+**Date:** 2026-11-23. **Spec:** 136, slice 3 (G-003; FR-010 to FR-017, SC-004). **Branch:**
+`spec/136-slice-3-parity-standard`. **Decided:** by the spec 136 session, carrying out #656 and #671.
+
+- **The helpers live in `@corex/build-tools/parity`** (`tree`, `render`, `stand-ins`, `find`, `gate`, `check`),
+  CommonJS, exported through the package's `exports`, so a client package can run the same gate and parity
+  check on its own blocks. The PHP side is `tests/Support/ParityTree.php` and `tests/Support/BlockFiles.php`.
+  The framework's root tests import the helpers by relative path, because a worktree's `node_modules` may point
+  at another checkout.
+- **A block's editor source** is its `editorScript` file and every local file it imports, followed. That covers
+  editors shared by several blocks (the flow blocks' `flowBlockEditor.js`).
+- **The stand-ins draw only what parity compares.** RichText draws its tag and class; `useBlockProps` returns its
+  class; InnerBlocks draws the element that holds the children; InspectorControls, BlockControls and the media
+  picker draw nothing. So a mark on a button inside the media picker's render is not checked by the parity test,
+  which is accepted: that button is never on the page.
+- **Markup is drawn with the Node build of `react-dom/server`**: the browser build that jsdom selects needs
+  `TextEncoder`, which the test environment does not have.
+- **The PHP tree reader closes `source`, `track` and `wbr` itself**, because the libxml that PHP 8.3 ships does
+  not treat them as void and nests what follows inside them.
+- **`make:block` has two shapes**, a string constant on `BlockScaffolder` (`IN_PLACE`, the default, and
+  `RECORDS`, chosen with `--records`), with a stub folder each. The in-place block ships its `parity.json`.
+- **The starter's example block is a `records` block**: it previews by the server render, made inert, and its
+  markup goes through `Corex\Blocks\BlockWrapper` when CoreX has booted, as `corex/account` does.
+- **SC-004 is proved by Jest running the PHP scaffolder** into the git-ignored `.cache/` folder (a generated
+  `index.js` must find React above it) and checking both shapes with the shared gate and parity check, without
+  editing the generated files.
+
+*Not chosen.* A media picker stand-in that calls its `render`: it would check one more mark and make every block
+with a picker depend on the stand-in imitating WordPress's picker. Comparing editor and page in a browser:
+already rejected in #671.
+
+**For the maintenance line.** `addons/corex-assistant/blocks/assistant/block.json` does not exist at `v0.48.1`,
+so its kind cannot be carried; the starter's `provider.stub` names `Corex\Blocks\BlockWrapper`, which slice 1
+added after the tag.

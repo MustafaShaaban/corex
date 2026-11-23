@@ -10,6 +10,8 @@ namespace {{ namespace }};
 
 defined('ABSPATH') || exit;
 
+use Corex\Blocks\BlockWrapper;
+use Corex\Boot;
 use {{ namespace }}\Blocks\ExampleRenderer;
 use {{ namespace }}\Controllers\ExampleController;
 use {{ namespace }}\Options\ExampleOptions;
@@ -40,8 +42,17 @@ final class {{ namespace }}ServiceProvider
 
         add_action('init', function (): void {
             $renderer = new ExampleRenderer($this->exampleService);
+            // What an editor sets on the block (its anchor, an extra class) reaches its root
+            // element through CoreX's BlockWrapper, as on every CoreX block (spec 136, FR-001).
+            // Corex boots on plugins_loaded, so its container is ready by init.
+            $container = Boot::booted() ? Boot::app()->container() : null;
+            $wrapper = $container !== null && $container->has(BlockWrapper::class)
+                ? $container->make(BlockWrapper::class)
+                : null;
             register_block_type(__DIR__ . '/Blocks/example', [
-                'render_callback' => static fn (): string => $renderer->render(),
+                'render_callback' => static fn (): string => $wrapper === null
+                    ? $renderer->render()
+                    : $wrapper->apply($renderer->render()),
             ]);
         });
     }
