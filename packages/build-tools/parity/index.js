@@ -17,6 +17,7 @@ const {
 	KNOWN_NEEDS,
 	editorParityProblem,
 	fixtureProblems,
+	isKnownNeed,
 } = require( './check' );
 const {
 	KINDS,
@@ -38,6 +39,7 @@ module.exports = {
 	editorImportsOf,
 	editorScriptsOf,
 	findFiles,
+	isKnownNeed,
 	fixtureProblems,
 	formatTree,
 	gateFailures,

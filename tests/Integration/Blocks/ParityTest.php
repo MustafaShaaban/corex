@@ -14,13 +14,33 @@
 
 declare(strict_types=1);
 
+use Corex\Boot;
+use Corex\Multisite\PluginActivationInspector;
 use Corex\Tests\Support\BlockFiles;
 use Corex\Tests\Support\CreatedPosts;
 use Corex\Tests\Support\ParityTree;
 use Corex\Tests\Support\ThemeContract;
 
-/** What a fixture may say the page needs to draw the block (`needs`). */
+/**
+ * What a fixture may say the page needs to draw the block (`needs`): a current post, or a plug-in
+ * that must be active (`plugin:<folder>/<file>.php`). The twin of `isKnownNeed()` in
+ * `@corex/build-tools/parity`.
+ */
 const PARITY_TEST_KNOWN_NEEDS = ['post'];
+const PARITY_TEST_PLUGIN_NEED = '#^plugin:([^/\s]+/[^/\s]+\.php)$#';
+
+/**
+ * @param list<mixed> $needs A fixture's `needs`.
+ * @return list<mixed> The ones no test can give.
+ */
+function parityTestUnknownNeeds(array $needs): array
+{
+    return array_values(array_filter(
+        $needs,
+        static fn (mixed $need): bool => ! in_array($need, PARITY_TEST_KNOWN_NEEDS, true)
+            && preg_match(PARITY_TEST_PLUGIN_NEED, (string) $need) !== 1,
+    ));
+}
 
 /**
  * Every fixture, keyed by its block's name.
@@ -85,8 +105,17 @@ it('FR-012: draws the tree of its parity.json on the page', function (string $fi
 
     // A fixture that could not fail (no tree, a wrong prefix, a pageOnly class of the block) fails here.
     expect(ParityTree::fixtureProblems($name, $fixture))->toBe([])
-        ->and(array_diff($needs, PARITY_TEST_KNOWN_NEEDS))->toBe([], $name . ': parity.json needs what no test can give')
+        ->and(parityTestUnknownNeeds($needs))->toBe([], $name . ': parity.json needs what no test can give')
         ->and(WP_Block_Type_Registry::get_instance()->is_registered($name))->toBeTrue($name . ' is not registered');
+
+    // A plug-in the fixture needs must be active, or the page draws another tree (a note that the
+    // feature is unavailable) and the comparison would fail for a reason it does not name.
+    $inspector = Boot::app()->container()->make(PluginActivationInspector::class);
+    foreach ($needs as $need) {
+        if (preg_match(PARITY_TEST_PLUGIN_NEED, (string) $need, $plugin) === 1) {
+            expect($inspector->isActive($plugin[1]))->toBeTrue($name . ': parity.json needs the plug-in ' . $plugin[1] . ' active');
+        }
+    }
 
     if (in_array('post', $needs, true)) {
         $postId = wp_insert_post(['post_title' => 'Parity probe', 'post_status' => 'publish', 'post_type' => 'post']);

@@ -63,6 +63,25 @@ to the wave's own entry when it is tagged from `release/gap-line`.
   as before. A test checks every `block.json` for these supports and every one of these style sheets,
   compiled, for the rule, an integration test reads the margin from WordPress's registry, and a browser test
   measures the colours.
+- **Copyright, newsletter signup and social share are edited in place; the records blocks say what they are
+  doing** (spec 136 slice 4, gap G-003; FR-018 to FR-020; DECISIONS #671, #673). The three are drawn in the
+  editor with the elements their page prints, without asking the server: the copyright line with the year and
+  the site's name (decoded, so an apostrophe or an ampersand in it shows as itself), the share bar with its
+  chosen networks, and the newsletter's form, whose heading, button label and consent text are typed where
+  they stand (an empty one shows the words the page prints in its place). What is typed or pasted there is
+  kept as plain text, since the renderer escapes it. With the newsletter add-on off, the editor draws the
+  renderer's note that signup is not available, as the page does; the server tells the block's editor script
+  which (`Corex\Blocks\NewsletterSignupEditor`). The newsletter's form never submits in the editor. Each has
+  its `parity.json` and declares `in-place`, and the gate's waiting list loses them. Posts, jobs, breadcrumbs
+  and `corex/form` preview their server render inert, inside the block's wrapper; the first load and an empty
+  render are named in WordPress's own Placeholder, a later load is WordPress's own (the last preview dimmed
+  under a Spinner), and a preview that failed is WordPress's Notice with WordPress's message. `corex/form` with
+  no form chosen asks which one on the canvas, with WordPress's selects, and a block inserted from the
+  inserter starts with none; a choice there draws the form. The chooser tells an empty list from one that
+  failed, and tells a person who may not list the forms so. A parity fixture may now say the page needs a
+  plug-in active (`"needs": [ "plugin:<folder>/<file>.php" ]`), and the parity helper's stand-ins cover
+  `@wordpress/data` and `@wordpress/core-data`. A browser test opens the editor on all seven. The new words
+  have a first Arabic draft, waiting for review.
 - **`npm run verify:client-theme`** checks every client theme that is a child: a preset list it declares names
   every entry of the CoreX theme's (WordPress replaces the parent's whole list with a child's), in its
   `theme.json` and its style variations, and every font file it lists exists. The generated site workflow, the
@@ -199,6 +218,17 @@ to the wave's own entry when it is tagged from `release/gap-line`.
     not turn them on shows none, and nothing changes. **Perego**: a margin set on a form or flow block adds a
     `style` attribute to the form's root, as an anchor set on it adds an `id` (slice 1), which matters to code
     that matches that markup by exact strings.
+  - **Spec 136 slice 4 (G-003).** Muva, Perego and Mizzey: no page changes and there is no upgrade step. No
+    renderer and no saved attribute changes, so every page prints exactly as before, Perego's form markup
+    included. Editors see copyright, newsletter signup and social share drawn as on the page and type the
+    newsletter's words on the canvas instead of in the side panel; posts, jobs, breadcrumbs and the form name
+    their loading and empty states, and a form block with no form asks for one on the canvas. An editor who
+    may not manage forms is told so there. A newsletter heading, button label or consent text saved earlier
+    with markup in it is shown as its text in the editor and keeps printing as before until it is edited. A
+    block saved
+    earlier loads in the editor unchanged, with no block validation message: all seven save no markup. A form
+    block saved earlier with no form named keeps showing the contact form, as its page does; only a form block
+    inserted from now on starts with none.
   - **Spec 137 slice 1 (G-013).** No upgrade step, no stored data changed.
     - **Muva** runs its own theme, which ships no `corex-navigation-collapse.css`, so the breakpoint writer does
       nothing there: its pages print the same markup, scripts and styles as before.
