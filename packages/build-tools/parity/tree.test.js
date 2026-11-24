@@ -96,6 +96,27 @@ describe( 'FR-011: the parity tree', () => {
 		] );
 	} );
 
+	test( 'skips what a child block draws (data-corex-parity-child) and keeps the element that holds it', () => {
+		// A block that holds blocks: the holder is compared, and the child blocks are compared
+		// through their own fixtures, so their elements are not part of this tree even when they
+		// print the parent's prefix.
+		const { tree, errors } = treeOf(
+			'<section class="corex-hero"><div class="corex-hero__slot">' +
+				'<div data-corex-parity-child><p class="corex-hero__eyebrow">E</p></div>' +
+				'<div data-corex-parity-child><p>Text</p></div>' +
+				'</div></section>'
+		);
+
+		expect( errors ).toEqual( [] );
+		expect( tree ).toEqual( [
+			{
+				tag: 'section',
+				classes: [ 'corex-hero' ],
+				children: [ { tag: 'div', classes: [ 'corex-hero__slot' ] } ],
+			},
+		] );
+	} );
+
 	test( 'removes the elements named in pageOnly, with what they hold', () => {
 		const { tree } = treeOf(
 			'<form class="corex-hero"><div class="corex-hero__trap"><input class="corex-hero__field" /></div>' +

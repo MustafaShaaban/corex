@@ -16195,6 +16195,7 @@ msgstr "مرحبًا! أنا %s. أستطيع أن أخبرك بما نقدمه 
 
 # Drafted 2026-11-11 (spec 121, merge with main); native review owed, see specs/121-tokens-and-type/arabic-review.md
 #: addons/corex-assistant/src/Front/AssistantStrings.php:101
+#: addons/corex-ui/src/Patterns/PatternLibrary.php
 msgid "What do you offer?"
 msgstr "ماذا تقدمون؟"
 
@@ -21604,3 +21605,88 @@ msgstr "ترجمة"
 msgctxt "block keyword"
 msgid "multilingual"
 msgstr "متعدد اللغات"
+
+# Drafted 2026-11-24 (spec 136 slice 5); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/accordion/index.js
+msgid "Accordion settings"
+msgstr "إعدادات الأكورديون"
+
+# Drafted 2026-11-24 (spec 136 slice 5); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/accordion/index.js
+msgid "Open one at a time"
+msgstr "فتح سؤال واحد في كل مرة"
+
+# Drafted 2026-11-24 (spec 136 slice 5); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/accordion/index.js
+msgid "Opening a question closes the one that is open. Works without JavaScript."
+msgstr "فتح سؤال يُغلق السؤال المفتوح. يعمل دون JavaScript."
+
+# Drafted 2026-11-24 (spec 136 slice 5); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/accordion/index.js
+msgid "Question heading level"
+msgstr "مستوى عنوان الأسئلة"
+
+# Drafted 2026-11-24 (spec 136 slice 5); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/accordion/index.js
+msgid "Makes each question a heading of this level, so the questions fit the page outline."
+msgstr "يجعل كل سؤال عنوانًا بهذا المستوى، لتتناسب الأسئلة مع مخطط الصفحة."
+
+# Drafted 2026-11-24 (spec 136 slice 5); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/accordion/index.js
+msgid "None: plain text"
+msgstr "بلا: نص عادي"
+
+# Drafted 2026-11-24 (spec 136 slice 5); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#. translators: %d: a heading level, from 2 to 6.
+#: addons/corex-ui/src/Blocks/accordion/index.js
+#, javascript-format
+msgid "Heading %d"
+msgstr "عنوان %d"
+
+# Drafted 2026-11-24 (spec 136 slice 5); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/accordion-item/index.js
+msgid "Question"
+msgstr "السؤال"
+
+# Drafted 2026-11-24 (spec 136 slice 5); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/accordion/block.json
+msgctxt "block description"
+msgid "Questions that open to show their answers, each answer holding any blocks. Works without JavaScript."
+msgstr "أسئلة تُفتح لتعرض أجوبتها، وكل جواب يحتوي على أي مكوّنات. يعمل دون JavaScript."
+
+# Drafted 2026-11-24 (spec 136 slice 5); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/accordion-item/block.json
+msgctxt "block title"
+msgid "Corex Accordion item"
+msgstr "عنصر أكورديون Corex"
+
+# Drafted 2026-11-24 (spec 136 slice 5); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Blocks/accordion-item/block.json
+msgctxt "block description"
+msgid "One question and its answer, which holds any blocks."
+msgstr "سؤال واحد وجوابه، ويحتوي الجواب على أي مكوّنات."
+
+# Drafted 2026-11-24 (spec 136 slice 5); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Patterns/PatternLibrary.php
+msgid "Describe what you offer and who it is for, in a sentence or two."
+msgstr "صِف ما تقدمه ولمن هو، في جملة أو جملتين."
+
+# Drafted 2026-11-24 (spec 136 slice 5); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Patterns/PatternLibrary.php
+msgid "How do I get in touch?"
+msgstr "كيف أتواصل معكم؟"
+
+# Drafted 2026-11-24 (spec 136 slice 5); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Patterns/PatternLibrary.php
+msgid "Say how a visitor reaches you and how soon you reply."
+msgstr "اذكر كيف يصل إليك الزائر ومتى تردّ."
+
+# Drafted 2026-11-24 (spec 136 slice 5); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Patterns/PatternLibrary.php
+msgid "What happens after I get in touch?"
+msgstr "ماذا يحدث بعد أن أتواصل معكم؟"
+
+# Drafted 2026-11-24 (spec 136 slice 5); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: addons/corex-ui/src/Patterns/PatternLibrary.php
+msgid "Describe the next steps, so a visitor knows what to expect."
+msgstr "صِف الخطوات التالية، ليعرف الزائر ما يتوقعه."

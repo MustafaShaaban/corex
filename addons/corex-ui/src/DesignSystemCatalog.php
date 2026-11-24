@@ -83,6 +83,8 @@ final class DesignSystemCatalog
         'testimonial' => 'Testimonial',
         'pricing'     => 'Pricing',
         'accordion'   => 'Accordion',
+        // The accordion's child block: one question and its answer (spec 136, FR-030).
+        'accordion-item' => 'Accordion item',
         'tabs'        => 'Tabs',
         'team'        => 'Team',
         'gallery'     => 'Gallery',

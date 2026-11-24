@@ -5,6 +5,10 @@
  * Native <details>/<summary>: accessible + keyboard-operable with no JavaScript.
  */
 /* stylelint-enable @stylistic/max-line-length */
+
+// The accordion and its items (spec 136, FR-030 to FR-032): the kit's
+// Accordion. The items' sheet is this one: an item exists only inside an
+// accordion, so this loads wherever an item is drawn, page and editor.
 .corex-accordion {
 	display: flex;
 	flex-direction: column;
@@ -16,11 +20,47 @@
 		box-shadow: var(--wp--preset--shadow--sm);
 	}
 
+	// The question, then the chevron at the end of the line. A flex summary
+	// is no list item, so the browser draws no triangle; Safari's own marker
+	// is hidden by name (FR-032).
 	&__summary {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--wp--preset--spacing--20);
 		padding: var(--wp--preset--spacing--30);
 		font-size: var(--wp--preset--font-size--lg);
 		color: var(--wp--preset--color--ink);
+		list-style: none;
 		cursor: pointer;
+
+		&::-webkit-details-marker {
+			display: none;
+		}
+	}
+
+	// A question drawn as a heading (FR-032) looks as plain text does: the
+	// heading level is for the page outline, not for its size.
+	&__question {
+		margin: 0;
+		font: inherit;
+		letter-spacing: inherit;
+		color: inherit;
+	}
+
+	// The kit's chevron points down. Closed, it is turned to point forward,
+	// to the end of the line; open, it points down. The build's right-to-left
+	// sheet mirrors the turn, so in Arabic a closed one points left.
+	&__icon {
+		flex: none;
+		inline-size: 1.25rem;
+		block-size: 1.25rem;
+		transform: rotate(-90deg);
+		transition: transform var(--wp--custom--motion--duration--base) var(--wp--custom--motion--easing--standard);
+	}
+
+	&__item[open] > &__summary &__icon {
+		transform: none;
 	}
 
 	&__content {
@@ -28,6 +68,24 @@
 		padding-inline: var(--wp--preset--spacing--30);
 		font-size: var(--wp--preset--font-size--sm);
 		color: var(--wp--preset--color--ink);
+
+		// An answer holds any blocks: the first and the last sit flush with
+		// the item's own padding.
+		> :first-child {
+			margin-block-start: 0;
+		}
+
+		> :last-child {
+			margin-block-end: 0;
+		}
+	}
+}
+
+// Under reduced motion the chevron turns without moving (FR-032).
+@media (prefers-reduced-motion: reduce) {
+
+	.corex-accordion__icon {
+		transition: none;
 	}
 }
 

@@ -1,0 +1,29 @@
+{
+	"prefix": "corex-accordion",
+	"attributes": { "oneOpen": true, "headingLevel": 3 },
+	"innerBlocks": [
+		{
+			"name": "corex/accordion-item",
+			"attributes": { "question": "What is CoreX?" },
+			"innerBlocks": [
+				{
+					"name": "core/paragraph",
+					"attributes": {},
+					"innerHTML": "<p>A framework for WordPress.</p>"
+				}
+			]
+		},
+		{
+			"name": "corex/accordion-item",
+			"attributes": { "question": "Does it need a script?" },
+			"innerBlocks": [
+				{
+					"name": "core/paragraph",
+					"attributes": {},
+					"innerHTML": "<p>No: each question opens and closes without one.</p>"
+				}
+			]
+		}
+	],
+	"tree": [ { "tag": "div", "classes": [ "corex-accordion" ] } ]
+}

@@ -1,0 +1,29 @@
+{
+	"prefix": "corex-accordion",
+	"attributes": { "question": "What is CoreX?" },
+	"context": { "corex/accordionHeadingLevel": 3 },
+	"innerBlocks": [
+		{
+			"name": "core/paragraph",
+			"attributes": {},
+			"innerHTML": "<p>A framework for WordPress.</p>"
+		}
+	],
+	"tree": [
+		{
+			"tag": "details",
+			"classes": [ "corex-accordion__item" ],
+			"children": [
+				{
+					"tag": "summary",
+					"classes": [ "corex-accordion__summary" ],
+					"children": [
+						{ "tag": "h3", "classes": [ "corex-accordion__question" ] },
+						{ "tag": "svg", "classes": [ "corex-accordion__icon" ] }
+					]
+				},
+				{ "tag": "div", "classes": [ "corex-accordion__content" ] }
+			]
+		}
+	]
+}

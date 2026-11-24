@@ -160,6 +160,38 @@ it('FR-012: a fixture whose first root does not carry the prefix fails, naming t
         ]))->toBe(['corex/hero: the first root of parity.json does not carry the prefix class corex-hero']);
 });
 
+it("FR-012: a child block's first root carries a class of its parent's prefix, not the prefix itself", function () {
+    $child = ['parent' => ['corex/accordion']];
+
+    expect(ParityTree::fixtureProblems('corex/accordion-item', [
+        'prefix' => 'corex-accordion',
+        'tree' => [['tag' => 'details', 'classes' => ['corex-accordion__item']]],
+    ], $child))->toBe([])
+        ->and(ParityTree::fixtureProblems('corex/accordion-item', [
+            'prefix' => 'corex-accordion',
+            'tree' => [['tag' => 'details', 'classes' => ['corex-accordions__item']]],
+        ], $child))->toBe([
+            "corex/accordion-item: the first root of parity.json carries no class of the block corex-accordion (a child block prints its parent's prefix)",
+        ]);
+});
+
+it('FR-011: skips what a child block draws (data-corex-parity-child) and keeps the element that holds it', function () {
+    $result = ParityTree::fromMarkup(
+        '<section class="corex-hero"><div class="corex-hero__slot">'
+        . '<div data-corex-parity-child><p class="corex-hero__eyebrow">E</p></div>'
+        . '<div data-corex-parity-child><p>Text</p></div>'
+        . '</div></section>',
+        'corex-hero',
+    );
+
+    expect($result['errors'])->toBe([])
+        ->and($result['tree'])->toBe([
+            ['tag' => 'section', 'classes' => ['corex-hero'], 'children' => [
+                ['tag' => 'div', 'classes' => ['corex-hero__slot']],
+            ]],
+        ]);
+});
+
 it('FR-012: a pageOnly class that is a class of the block fails, naming the block', function () {
     expect(ParityTree::fixtureProblems('corex/hero', [
         'prefix' => 'corex-hero',

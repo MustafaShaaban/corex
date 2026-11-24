@@ -8,7 +8,11 @@
  * itself or the prefix followed by `__` or `--`. An element with no such class is transparent:
  * its children take its place. An element marked `data-corex-editor-only` is skipped with
  * everything inside it, and may not carry a class of the block. An element that carries a class
- * named in `pageOnly` is removed with everything inside it.
+ * named in `pageOnly` is removed with everything inside it. An element marked
+ * `data-corex-parity-child` is what a child block drew, and is skipped with everything inside it:
+ * where a block holds blocks, the element that holds them is compared, and what the child blocks
+ * draw is compared through their own fixtures (`tests/Integration/Blocks/ParityTest.php` puts the
+ * mark around each child block it renders).
  *
  * The JavaScript twin is `packages/build-tools/parity/tree.js`; the two must compute the same tree.
  *
@@ -25,6 +29,9 @@ use DOMElement;
 final class ParityTree
 {
     public const EDITOR_ONLY = 'data-corex-editor-only';
+
+    /** The mark around what a child block drew. */
+    public const CHILD_BLOCK = 'data-corex-parity-child';
 
     /**
      * Elements that are void in HTML and that libxml's HTML parser does not know as void: given
@@ -106,20 +113,33 @@ final class ParityTree
     /**
      * What makes a fixture unable to fail: no tree, a first root that does not carry the prefix
      * (a wrong prefix gives an empty tree on both sides), or a `pageOnly` class that is a class of
-     * the block, which could hide a whole subtree from the page's side. The JavaScript twin is
-     * `fixtureProblems()` in `packages/build-tools/parity/check.js`.
+     * the block, which could hide a whole subtree from the page's side. A child block (its
+     * `block.json` names a `parent`) prints its parent's prefix, so its first root carries a class
+     * of the block rather than the prefix itself. The JavaScript twin is `fixtureProblems()` in
+     * `packages/build-tools/parity/check.js`.
      *
-     * @param array<string,mixed> $fixture the block's `parity.json`
+     * @param array<string,mixed> $fixture  the block's `parity.json`
+     * @param array<string,mixed> $metadata the block's `block.json`, for its `parent`
      * @return list<string> the problems, each naming the block
      */
-    public static function fixtureProblems(string $name, array $fixture): array
+    public static function fixtureProblems(string $name, array $fixture, array $metadata = []): array
     {
         $prefix = (string) ($fixture['prefix'] ?? '');
         $tree = self::normalize($fixture['tree'] ?? []);
+        $isChild = is_array($metadata['parent'] ?? null) && $metadata['parent'] !== [];
         $problems = [];
 
         if ($tree === []) {
             $problems[] = $name . ': parity.json has no tree, so the comparison proves nothing';
+        } elseif ($isChild) {
+            $carries = array_filter($tree[0]['classes'], static fn (string $class): bool => self::isBlockClass($class, $prefix));
+            if ($carries === []) {
+                $problems[] = sprintf(
+                    "%s: the first root of parity.json carries no class of the block %s (a child block prints its parent's prefix)",
+                    $name,
+                    $prefix,
+                );
+            }
         } elseif (! in_array($prefix, $tree[0]['classes'], true)) {
             $problems[] = sprintf('%s: the first root of parity.json does not carry the prefix class %s', $name, $prefix);
         }
@@ -177,6 +197,10 @@ final class ParityTree
         if ($element->hasAttribute(self::EDITOR_ONLY)) {
             array_push($errors, ...self::editorOnlyErrors($element, $prefix));
 
+            return [];
+        }
+
+        if ($element->hasAttribute(self::CHILD_BLOCK)) {
             return [];
         }
 

@@ -82,6 +82,27 @@ to the wave's own entry when it is tagged from `release/gap-line`.
   plug-in active (`"needs": [ "plugin:<folder>/<file>.php" ]`), and the parity helper's stand-ins cover
   `@wordpress/data` and `@wordpress/core-data`. A browser test opens the editor on all seven. The new words
   have a first Arabic draft, waiting for review.
+- **An accordion answer holds any blocks, and an accordion can open one question at a time** (spec 136 slice 5,
+  gap G-004, US-BLK-02; FR-030 to FR-032, FR-039, FR-040; DECISIONS #672, #675). `corex/accordion` holds a new
+  child block, `corex/accordion-item` ("Corex Accordion item"), whose question is typed in place in its
+  `<summary>` and whose answer holds any blocks: paragraphs, lists, images, buttons. The markup stays native
+  `<details>` and `<summary>`, so a question opens and closes with Enter and Space with scripts off. Two
+  settings, both off by default: "Open one at a time", which gives the items of one accordion the same `name`
+  of `<details>`, so the browser closes the open one, with or without scripts, and the questions' heading
+  level (2 to 6), which makes each question a heading of that level inside its `<summary>`; Chromium's tree
+  then reads a heading inside a control announced as expanded or collapsed. Each question ends with the kit's
+  chevron, pointing forward when closed and down when open, mirrored in Arabic, turned without a transition
+  under reduced motion; the browser's triangle is not drawn. An accordion saved before keeps its questions
+  and answers and is drawn from them in the new markup; opening it in the editor turns each one into an
+  accordion item holding a paragraph, losing none. The FAQ pattern now inserts an accordion with three
+  questions as headings 3, marked as sample content, so a visitor sees none until someone edits one. Both
+  blocks are `in-place` with a `parity.json`, and the accordion leaves the gate's waiting list. The parity
+  standard now compares a block that holds blocks as its contract says: the page's side marks what each child
+  block drew (`data-corex-parity-child`) and leaves it out, so the element that holds them is compared and the
+  children through their own fixtures; a fixture may give the block context a parent gives a child
+  (`context`), and a child block's first root carries a class of its parent's prefix. A browser test covers
+  TC-BLK-02-01 to 06 on one site, with scripts on and off and in Arabic. The new words have a first Arabic
+  draft, waiting for review.
 - **`npm run verify:client-theme`** checks every client theme that is a child: a preset list it declares names
   every entry of the CoreX theme's (WordPress replaces the parent's whole list with a child's), in its
   `theme.json` and its style variations, and every font file it lists exists. The generated site workflow, the
@@ -237,6 +258,21 @@ to the wave's own entry when it is tagged from `release/gap-line`.
     earlier loads in the editor unchanged, with no block validation message: all seven save no markup. A form
     block saved earlier with no form named keeps showing the contact form, as its page does; only a form block
     inserted from now on starts with none.
+  - **Spec 136 slice 5 (G-004).** No upgrade step, and no stored data changes until an editor opens a page.
+    - **Muva** runs no corex-ui block: nothing changes.
+    - **Perego** has corex-ui active, and an accordion saved on its pages keeps every question and answer and
+      opens and closes as before. Its markup changes inside each `<summary>`: the question, which was the
+      summary's bare text, is wrapped in `<span class="corex-accordion__question">`, and the kit's chevron
+      follows it (`<svg class="corex-accordion__icon" aria-hidden="true">`); the summary is a flex row, so the
+      browser's triangle is no longer drawn and the chevron sits at the end of the line. The root, the
+      `<details class="corex-accordion__item">` and the answer's `<div class="corex-accordion__content">` are as
+      they were. When an editor opens such a page, the accordion becomes accordion items; once the page is
+      saved, each `<details>` also carries `wp-block-corex-accordion-item`, and each answer is a paragraph
+      (`<p>`) inside its content `<div>` instead of bare text. A style or a script that matched the old
+      summary's text or the bare answer by exact strings needs a look. A page holding the FAQ pattern shows a
+      visitor what it showed before (its heading, no question); an editor sees three sample questions,
+      labelled, until one is edited.
+    - **Mizzey** is not on this line.
   - **Spec 137 slice 1 (G-013).** No upgrade step, no stored data changed.
     - **Muva** runs its own theme, which ships no `corex-navigation-collapse.css`, so the breakpoint writer does
       nothing there: its pages print the same markup, scripts and styles as before.

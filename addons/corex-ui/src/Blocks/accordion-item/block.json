@@ -1,0 +1,23 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "corex/accordion-item",
+	"title": "Corex Accordion item",
+	"category": "corex",
+	"icon": "menu",
+	"parent": [ "corex/accordion" ],
+	"description": "One question and its answer, which holds any blocks.",
+	"textdomain": "corex",
+	"attributes": {
+		"question": { "type": "string", "default": "" }
+	},
+	"usesContext": [ "corex/accordionHeadingLevel", "corex/accordionName" ],
+	"supports": {
+		"html": false,
+		"anchor": true,
+		"reusable": false,
+		"spacing": { "margin": ["top", "bottom"] }
+	},
+	"editorScript": "file:./index.js",
+	"corex": { "renderer": "Corex\\Ui\\Blocks\\AccordionItemRenderer", "editor": "in-place" }
+}

@@ -128,12 +128,22 @@ An `in-place` block keeps a `parity.json` beside its `block.json`:
 ```
 
 - `prefix`: the block's class. A class of the block is the prefix itself or the prefix followed
-  by `__` or `--`; every other class (`wp-block-*`, `is-selected`) is ignored.
+  by `__` or `--`; every other class (`wp-block-*`, `is-selected`) is ignored. A child block (its
+  `block.json` names a `parent`) prints its parent's prefix: `corex/accordion-item` has the prefix
+  `corex-accordion`, and its first root carries `corex-accordion__item` rather than the prefix
+  itself.
 - `attributes`: what the block is drawn with, every field filled, so the editor's placeholders
   and the page's optional parts are all drawn.
 - `innerBlocks` (optional): the child blocks, each `name`, `attributes`, `innerHTML` for a
   static block, and its own `innerBlocks`. The element that holds them is compared; what they
-  draw is compared through their own fixtures.
+  draw is compared through their own fixtures. The page's side draws them as real blocks and
+  wraps what each one drew in an element marked `data-corex-parity-child`, which the tree leaves
+  out with what it holds; the editor's stand-ins draw the holder empty. So the holder (the
+  accordion's root, a tab's panel) is in the tree on both sides, and a child's elements are in
+  neither, even when they carry the parent's prefix.
+- `context` (optional): the block context the block is drawn in, as a parent gives it to a child
+  block (`{ "corex/accordionHeadingLevel": 3 }`). The editor gets it in `props.context`; the page
+  gets it through WordPress's `render_block_context`.
 - `needs` (optional): what the page needs to draw the block: `"post"`, a current post, or
   `"plugin:<folder>/<file>.php"`, a plug-in that must be active (the PHP test fails, naming it,
   when it is not). The editor needs neither.
@@ -161,9 +171,13 @@ so an app or client package tests its own blocks the same way. What a client nee
   editor draws the fixture's tree, or the block, both trees and the markup).
 
 It also exports the pieces they are made of (`parityTree`, `fixtureProblems`, `renderEdit`,
-`registeredBlock`, `editorScriptsOf`, `editorImportsOf`, `findFiles`). The page's side, in PHP, is
+`registeredBlock`, `editorScriptsOf`, `editorImportsOf`, `findFiles`) and the two marks
+(`EDITOR_ONLY`, `CHILD_BLOCK`). The page's side, in PHP, is
 `tests/Support/ParityTree.php` in the framework; a client draws its block through WordPress
-with it, or with a copy of it in its own tests.
+with it, or with a copy of it in its own tests. A client block that holds blocks wraps each child
+block's markup in an element carrying `data-corex-parity-child` before reading the tree, as
+`parityTestRender()` in `tests/Integration/Blocks/ParityTest.php` does with WordPress's
+`render_block_data` and `render_block` filters.
 
 ## Commands
 

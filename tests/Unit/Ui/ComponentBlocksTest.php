@@ -9,6 +9,7 @@
 
 declare(strict_types=1);
 
+use Corex\Ui\Blocks\AccordionItemMarkup;
 use Corex\Ui\Blocks\AccordionRenderer;
 use Corex\Ui\Blocks\PricingRenderer;
 use Corex\Ui\Blocks\StatRenderer;
@@ -71,32 +72,13 @@ it('falls back to a legacy newline feature string (backwards data)', function ()
     expect($html)->toContain('<ul class="corex-pricing__features"><li>A</li><li>B</li></ul>');
 });
 
-it('renders accordion items from an array of {title,content}, empty -> nothing', function () use ($block) {
-    $html = (new AccordionRenderer())->render([
-        'items' => [
-            ['title' => 'What is Corex?', 'content' => 'A WordPress framework.'],
-            ['title' => 'Title only', 'content' => ''],
-        ],
-    ], '', $block);
-
-    expect($html)->toContain('<div class="corex-accordion">')
-        ->toContain('<details class="corex-accordion__item"><summary class="corex-accordion__summary">What is Corex?</summary><div class="corex-accordion__content">A WordPress framework.</div></details>')
-        ->toContain('<summary class="corex-accordion__summary">Title only</summary>')
-        ->and((new AccordionRenderer())->render(['items' => []], '', $block))->toBe('');
-});
-
-it('falls back to a legacy delimited accordion string (backwards data)', function () use ($block) {
-    $html = (new AccordionRenderer())->render(['items' => "Q | A\nTitle only"], '', $block);
-
-    expect($html)->toContain('<summary class="corex-accordion__summary">Q</summary><div class="corex-accordion__content">A</div>')
-        ->toContain('<summary class="corex-accordion__summary">Title only</summary>');
-});
+// The accordion's own tests, the old shapes included, are in AccordionRendererTest (spec 136 slice 5).
 
 it('uses no hardcoded colors or pixel sizes in any rendered markup (token-only)', function () use ($block) {
     $markup = (new StatRenderer())->render(['value' => '1', 'label' => 'x'], '', $block)
         . (new TestimonialRenderer())->render(['quote' => 'q', 'author' => 'a'], '', $block)
         . (new PricingRenderer())->render(['plan' => 'P', 'price' => '$1', 'features' => "a\nb", 'ctaText' => 'Go', 'ctaUrl' => 'https://e.com'], '', $block)
-        . (new AccordionRenderer())->render(['items' => "T | C"], '', $block);
+        . (new AccordionRenderer(new AccordionItemMarkup()))->render(['items' => "T | C"], '', $block);
 
     expect($markup)->not->toMatch('/#[0-9a-fA-F]{3,6}\b/')   // no hex colors
         ->not->toMatch('/\b\d+px\b/')                          // no px sizes

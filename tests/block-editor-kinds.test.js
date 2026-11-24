@@ -25,8 +25,7 @@ const ROOT = path.resolve( __dirname, '..' );
  * the list holds the 13 of spec 150 (SC-003).
  */
 const WAITING = {
-	// Spec 136 slices 5 to 8: blocks that hold blocks.
-	'corex/accordion': 'spec 136 slice 5',
+	// Spec 136 slices 6a to 8: blocks that hold blocks.
 	'corex/tabs': 'spec 136 slice 6a',
 	'corex/carousel': 'spec 136 slice 7',
 	'corex/modal': 'spec 136 slice 8',

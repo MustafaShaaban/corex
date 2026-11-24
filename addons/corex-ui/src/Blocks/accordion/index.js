@@ -1,86 +1,95 @@
 /**
- * Corex Accordion — DYNAMIC block edited INLINE (spec 029). Each panel's title and content
- * are RichText regions typed on the canvas; panels are repeatable rows. The PHP
- * AccordionRenderer builds accessible native <details>/<summary> server-side from the
- * `items` array (with a fallback that still renders the legacy delimited-string format).
+ * Corex Accordion: questions that open to show their answers (spec 136 slice 5, User Story 4;
+ * FR-030 to FR-032, FR-039; DECISIONS #672, #675).
+ *
+ * In place: the editor draws the accordion's root as the element that holds its accordion items,
+ * as the page does, and each item is edited where it stands. The block saves its inner blocks only;
+ * `AccordionRenderer` prints the page. Its settings are "Open one at a time" (off by default; the
+ * page gives the items one `name`, so the browser keeps one open, with or without scripts) and the
+ * questions' heading level (none by default), which reaches the items as block context. An
+ * accordion saved before it held blocks migrates when it is opened (`./deprecated`).
  */
 import './style.scss';
 
 import { registerBlockType } from '@wordpress/blocks';
 import {
 	useBlockProps,
-	RichText,
+	useInnerBlocksProps,
+	InnerBlocks,
 	InspectorControls,
 } from '@wordpress/block-editor';
-import { PanelBody, Button } from '@wordpress/components';
-import { __ } from '@wordpress/i18n';
+import { PanelBody, SelectControl, ToggleControl } from '@wordpress/components';
+import { __, sprintf } from '@wordpress/i18n';
 import metadata from './block.json';
+import { savedAsItems } from './deprecated';
+
+const ITEM = 'corex/accordion-item';
+
+/**
+ * @return {Array<{label: string, value: string}>} The heading levels a question may take.
+ */
+function headingLevels() {
+	return [
+		{ label: __( 'None: plain text', 'corex' ), value: '0' },
+		...[ 2, 3, 4, 5, 6 ].map( ( level ) => ( {
+			/* translators: %d: a heading level, from 2 to 6. */
+			label: sprintf( __( 'Heading %d', 'corex' ), level ),
+			value: String( level ),
+		} ) ),
+	];
+}
 
 function Edit( { attributes, setAttributes } ) {
-	const blockProps = useBlockProps( { className: 'corex-accordion' } );
-	const items = Array.isArray( attributes.items ) ? attributes.items : [];
-
-	const setItem = ( index, key, value ) => {
-		const next = items.map( ( item, i ) =>
-			i === index ? { ...item, [ key ]: value } : item
-		);
-		setAttributes( { items: next } );
-	};
-	const addItem = () =>
-		setAttributes( {
-			items: [ ...items, { title: '', content: '' } ],
-		} );
-	const removeItem = ( index ) =>
-		setAttributes( {
-			items: items.filter( ( _it, i ) => i !== index ),
-		} );
+	const { oneOpen, headingLevel } = attributes;
+	const innerBlocksProps = useInnerBlocksProps(
+		useBlockProps( { className: 'corex-accordion' } ),
+		{
+			allowedBlocks: [ ITEM ],
+			template: [ [ ITEM ] ],
+			defaultBlock: { name: ITEM },
+			directInsert: true,
+		}
+	);
 
 	return (
-		<div { ...blockProps }>
+		<>
 			<InspectorControls>
-				<PanelBody title={ __( 'Accordion', 'corex' ) }>
-					<Button variant="secondary" onClick={ addItem }>
-						{ __( 'Add panel', 'corex' ) }
-					</Button>
+				<PanelBody title={ __( 'Accordion settings', 'corex' ) }>
+					<ToggleControl
+						__nextHasNoMarginBottom
+						label={ __( 'Open one at a time', 'corex' ) }
+						help={ __(
+							'Opening a question closes the one that is open. Works without JavaScript.',
+							'corex'
+						) }
+						checked={ !! oneOpen }
+						onChange={ ( value ) =>
+							setAttributes( { oneOpen: value } )
+						}
+					/>
+					<SelectControl
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
+						label={ __( 'Question heading level', 'corex' ) }
+						help={ __(
+							'Makes each question a heading of this level, so the questions fit the page outline.',
+							'corex'
+						) }
+						value={ String( headingLevel || 0 ) }
+						options={ headingLevels() }
+						onChange={ ( value ) =>
+							setAttributes( { headingLevel: Number( value ) } )
+						}
+					/>
 				</PanelBody>
 			</InspectorControls>
-
-			{ items.map( ( item, index ) => (
-				<details className="corex-accordion__item" key={ index } open>
-					<summary className="corex-accordion__summary">
-						<RichText
-							tagName="span"
-							value={ item.title }
-							onChange={ ( v ) => setItem( index, 'title', v ) }
-							placeholder={ __( 'Panel title', 'corex' ) }
-						/>
-					</summary>
-					<div className="corex-accordion__content">
-						<RichText
-							tagName="div"
-							value={ item.content }
-							onChange={ ( v ) => setItem( index, 'content', v ) }
-							placeholder={ __( 'Panel content', 'corex' ) }
-						/>
-						<Button
-							isDestructive
-							variant="link"
-							onClick={ () => removeItem( index ) }
-						>
-							{ __( 'Remove panel', 'corex' ) }
-						</Button>
-					</div>
-				</details>
-			) ) }
-
-			<Button variant="secondary" onClick={ addItem }>
-				{ __( 'Add panel', 'corex' ) }
-			</Button>
-		</div>
+			<div { ...innerBlocksProps } />
+		</>
 	);
 }
 
 registerBlockType( metadata.name, {
 	edit: Edit,
-	save: () => null,
+	save: () => <InnerBlocks.Content />,
+	deprecated: [ savedAsItems ],
 } );

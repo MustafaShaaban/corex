@@ -4,6 +4,7 @@
  * The format of a `parity.json` is described in `packages/build-tools/README.md`.
  */
 const {
+	CHILD_BLOCK,
 	EDITOR_ONLY,
 	formatTree,
 	isBlockClass,
@@ -29,6 +30,7 @@ const {
 } = require( './gate' );
 
 module.exports = {
+	CHILD_BLOCK,
 	EDITOR_ONLY,
 	KINDS,
 	KNOWN_NEEDS,

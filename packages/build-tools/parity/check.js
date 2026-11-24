@@ -36,21 +36,36 @@ const json = ( tree ) => JSON.stringify( tree, null, 2 );
 /**
  * What makes a fixture unable to fail: no tree, a first root that does not carry the prefix
  * (a wrong prefix gives an empty tree on both sides), or a `pageOnly` class that is a class of
- * the block, which could hide a whole subtree from the page's side.
+ * the block, which could hide a whole subtree from the page's side. A child block (its
+ * `block.json` names a `parent`) prints its parent's prefix, so its first root carries a class of
+ * the block (`corex-accordion__item`) rather than the prefix itself.
  *
- * @param {string} name    The block's name, for the messages.
- * @param {Object} fixture The block's `parity.json`.
+ * @param {string} name       The block's name, for the messages.
+ * @param {Object} fixture    The block's `parity.json`.
+ * @param {Object} [metadata] The block's `block.json`, for its `parent`.
  * @return {Array<string>} The problems, each naming the block.
  */
-function fixtureProblems( name, fixture ) {
+function fixtureProblems( name, fixture, metadata = {} ) {
 	const prefix = String( fixture.prefix || '' );
 	const tree = normalizeTree( fixture.tree );
+	const isChild =
+		Array.isArray( metadata.parent ) && metadata.parent.length > 0;
 	const problems = [];
 
 	if ( tree.length === 0 ) {
 		problems.push(
 			`${ name }: parity.json has no tree, so the comparison proves nothing`
 		);
+	} else if ( isChild ) {
+		if (
+			! tree[ 0 ].classes.some( ( entry ) =>
+				isBlockClass( entry, prefix )
+			)
+		) {
+			problems.push(
+				`${ name }: the first root of parity.json carries no class of the block ${ prefix } (a child block prints its parent's prefix)`
+			);
+		}
 	} else if ( ! tree[ 0 ].classes.includes( prefix ) ) {
 		problems.push(
 			`${ name }: the first root of parity.json does not carry the prefix class ${ prefix }`
@@ -82,7 +97,7 @@ function editorParityProblem( folder ) {
 	const { name } = metadata;
 	const needs = fixture.needs || [];
 
-	const problems = fixtureProblems( name, fixture );
+	const problems = fixtureProblems( name, fixture, metadata );
 	if ( problems.length > 0 ) {
 		return problems.join( '\n' );
 	}
@@ -107,9 +122,14 @@ function editorParityProblem( folder ) {
 	const markup = renderEdit( settings.edit, {
 		metadata,
 		attributes: fixture.attributes || {},
-		context: needs.includes( 'post' )
-			? { postId: 1, postType: 'post' }
-			: {},
+		// The block context a parent gives a child block (`corex/accordionHeadingLevel`), and a
+		// current post when the page needs one.
+		context: {
+			...( needs.includes( 'post' )
+				? { postId: 1, postType: 'post' }
+				: {} ),
+			...( fixture.context || {} ),
+		},
 	} );
 	const { tree, errors } = parityTree( markup, { prefix: fixture.prefix } );
 	const expected = normalizeTree( fixture.tree );

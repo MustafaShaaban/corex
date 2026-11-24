@@ -11,41 +11,56 @@ namespace Corex\Ui\Blocks;
 defined('ABSPATH') || exit;
 
 use Corex\Blocks\BlockRenderer;
+use Countable;
 
 /**
- * Renders a set of disclosures as native `<details>`/`<summary>` elements — accessible and
- * keyboard-operable with no JavaScript. Items come from a simple text attribute: one
- * `Title | Content` per line (a line with no `|` is a title-only item). Empty input
- * renders nothing.
+ * Renders `corex/accordion` (spec 136, FR-030 to FR-032, FR-039): questions that open to show their
+ * answers, as native `<details>`/`<summary>`, accessible and operable from the keyboard with no script.
+ *
+ * An accordion holds `corex/accordion-item` blocks, which draw themselves; this prints the root around
+ * what they drew. One saved in the old shape (no inner blocks, its questions and answers in `items`) is
+ * drawn from that attribute, in the same markup as the items, until an editor opens it and the editor
+ * migrates it. `items` is the spec-029 array (`[{title, content}]`) or, before it, one `Title | Content`
+ * per line. Nothing to show renders nothing.
  */
 final class AccordionRenderer implements BlockRenderer
 {
+    public function __construct(private readonly AccordionItemMarkup $markup)
+    {
+    }
+
     /**
      * @param array<string,mixed> $attributes
      */
     public function render(array $attributes, string $content, object $block): string
     {
+        if ($this->holdsBlocks($block)) {
+            return trim($content) === '' ? '' : '<div class="corex-accordion">' . $content . '</div>';
+        }
+
         $items = $this->parse($attributes['items'] ?? []);
 
         if ($items === []) {
             return '';
         }
 
+        $level = $this->markup->level($attributes['headingLevel'] ?? 0);
+        $name = empty($attributes['oneOpen']) ? '' : wp_unique_id('corex-accordion-');
         $html = '<div class="corex-accordion">';
 
-        // Title + content are inline-RichText (spec 029) → wp_kses_post.
+        // Title and content were inline RichText (spec 029): the answer is passed through wp_kses_post.
         foreach ($items as [$title, $body]) {
-            $html .= '<details class="corex-accordion__item"><summary class="corex-accordion__summary">'
-                . wp_kses_post($title) . '</summary>';
-
-            if ($body !== '') {
-                $html .= '<div class="corex-accordion__content">' . wp_kses_post($body) . '</div>';
-            }
-
-            $html .= '</details>';
+            $html .= $this->markup->item($title, $body === '' ? '' : wp_kses_post($body), $level, $name);
         }
 
         return $html . '</div>';
+    }
+
+    private function holdsBlocks(object $block): bool
+    {
+        $inner = $block->inner_blocks ?? [];
+
+        return (is_array($inner) || $inner instanceof Countable) && count($inner) > 0;
     }
 
     /**

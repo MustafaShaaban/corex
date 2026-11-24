@@ -74,7 +74,9 @@ function wrapperTestMinimalAttributes(int $flowId): array
     return [
         'corex/account'           => [],
         'corex/accordion'         => ['items' => [['title' => 'Q', 'content' => 'A']]],
-        'corex/alert'             => ['message' => 'M'],
+        // A child block, drawn alone here: inside its accordion the page prints it the same way.
+        'corex/accordion-item'    => ['question' => 'Q'],
+        'corex/alert'           => ['message' => 'M'],
         'corex/badge'             => ['label' => 'L'],
         'corex/breadcrumbs'       => [],
         'corex/carousel'          => ['slides' => [['content' => 'S']]],

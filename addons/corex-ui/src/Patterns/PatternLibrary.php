@@ -201,13 +201,47 @@ final class PatternLibrary
             . '</div><!-- /wp:columns --></section><!-- /wp:group -->';
     }
 
+    /**
+     * The FAQ: an accordion with three questions (spec 136, FR-040), each a heading 3 under the
+     * section's heading 2, its answer a paragraph that says what to write there. The questions are
+     * the site's to write, so the accordion is sample content: a visitor sees the section's heading
+     * alone, as before the accordion held questions, until someone edits one in the editor.
+     */
     private function faq(): string
     {
+        $item = static fn (string $question, string $answer): string => sprintf(
+            '<!-- wp:corex/accordion-item %1$s -->'
+            . '<!-- wp:paragraph --><p>%2$s</p><!-- /wp:paragraph -->'
+            . '<!-- /wp:corex/accordion-item -->',
+            self::blockAttributes(['question' => $question]),
+            $answer,
+        );
+
         return '<!-- wp:group {"tagName":"section","align":"full","style":{"spacing":{"padding":{"top":"var:preset|spacing|80","bottom":"var:preset|spacing|80"}}},"layout":{"type":"constrained"}} -->'
             . '<section class="wp-block-group alignfull" style="padding-top:var(--wp--preset--spacing--80);padding-bottom:var(--wp--preset--spacing--80)">'
             . '<!-- wp:heading {"textAlign":"center"} --><h2 class="wp-block-heading has-text-align-center">' . esc_html__('Frequently asked questions', 'corex') . '</h2><!-- /wp:heading -->'
-            . '<!-- wp:corex/accordion /-->'
+            . '<!-- wp:corex/accordion {"headingLevel":3,"className":"' . self::SAMPLE . '"} -->'
+            . $item(esc_html__('What do you offer?', 'corex'), esc_html__('Describe what you offer and who it is for, in a sentence or two.', 'corex'))
+            . $item(esc_html__('How do I get in touch?', 'corex'), esc_html__('Say how a visitor reaches you and how soon you reply.', 'corex'))
+            . $item(esc_html__('What happens after I get in touch?', 'corex'), esc_html__('Describe the next steps, so a visitor knows what to expect.', 'corex'))
+            . '<!-- /wp:corex/accordion -->'
             . '</section><!-- /wp:group -->';
+    }
+
+    /**
+     * A block's attributes as its comment holds them: JSON in which nothing can end the comment or
+     * open a tag, as WordPress's own `serialize_block_attributes()` writes it.
+     *
+     * @param array<string,mixed> $attributes
+     */
+    private static function blockAttributes(array $attributes): string
+    {
+        $json = (string) json_encode(
+            $attributes,
+            JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_QUOT,
+        );
+
+        return str_replace('--', '\\u002d\\u002d', $json);
     }
 
     private function news(): string

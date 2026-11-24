@@ -15,6 +15,7 @@ use Corex\Blocks\DynamicBlockRegistrar;
 use Corex\Container\ContainerInterface;
 use Corex\Foundation\ServiceProvider;
 use Corex\Support\Config\ConfigInterface;
+use Corex\Ui\Blocks\AccordionGroups;
 use Corex\Ui\Blocks\BlockStyles;
 use Corex\Ui\Blocks\PostsProvider;
 use Corex\Ui\Blocks\WpPostsProvider;
@@ -32,6 +33,9 @@ final class UiServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->container->singleton(PostsProvider::class, WpPostsProvider::class);
+
+        // One name per accordion drawn, shared by its items (spec 136, FR-031).
+        $this->container->singleton(AccordionGroups::class);
 
         $this->container->singleton(
             UiManifest::class,
@@ -66,6 +70,9 @@ final class UiServiceProvider extends ServiceProvider
 
         // The hero and call-to-action buttons get a real address when drawn, or are not drawn (spec 115).
         $this->container->make(ActionLinks::class)->register();
+
+        // "Open one at a time": an accordion's items learn its name as block context (spec 136, FR-031).
+        $this->container->make(AccordionGroups::class)->register();
     }
 
     /**

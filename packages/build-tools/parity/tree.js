@@ -6,7 +6,11 @@
  * itself or the prefix followed by `__` or `--`. An element with no such class is transparent:
  * its children take its place. An element marked `data-corex-editor-only` is skipped with
  * everything inside it, and may not carry a class of the block. An element that carries a class
- * named in `pageOnly` is removed with everything inside it.
+ * named in `pageOnly` is removed with everything inside it. An element marked
+ * `data-corex-parity-child` is what a child block drew, and is skipped with everything inside it:
+ * where a block holds blocks, the element that holds them is compared, and what the child blocks
+ * draw is compared through their own fixtures. The page's side of the test puts the mark around
+ * each child block; the editor's stand-ins draw no child block at all.
  *
  * The PHP twin is `tests/Support/ParityTree.php`; the two must compute the same tree.
  *
@@ -15,6 +19,7 @@
  */
 
 const EDITOR_ONLY = 'data-corex-editor-only';
+const CHILD_BLOCK = 'data-corex-parity-child';
 
 function isBlockClass( name, prefix ) {
 	return (
@@ -61,6 +66,10 @@ function nodeFor( element, context ) {
 
 	if ( element.hasAttribute( EDITOR_ONLY ) ) {
 		errors.push( ...editorOnlyErrors( element, prefix ) );
+		return [];
+	}
+
+	if ( element.hasAttribute( CHILD_BLOCK ) ) {
 		return [];
 	}
 
@@ -155,6 +164,7 @@ function formatTree( tree, depth = 0 ) {
 }
 
 module.exports = {
+	CHILD_BLOCK,
 	EDITOR_ONLY,
 	isBlockClass,
 	parityTree,

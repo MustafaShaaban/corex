@@ -18,7 +18,7 @@ are composed of these units. Optional add-on; requires `corex-core` and the `cor
 | `corex/stat` | A single statistic — `value`, `label`, optional `description` |
 | `corex/testimonial` | A quote with attribution — accessible `figure`/`blockquote`/`figcaption` (`quote`/`author`/`role`) |
 | `corex/pricing` | A pricing card — `plan`, `price`, `period`, `features` (one per line), optional CTA |
-| `corex/accordion` | Accessible disclosures from `items` (one `Title \| Content` per line) — native `<details>`, no JS |
+| `corex/accordion` | Questions that open to show their answers: it holds `corex/accordion-item` blocks, each a question typed in place and an answer that holds any blocks. Native `<details>`, no JS. Settings: "Open one at a time" (the `name` of `<details>`, off by default) and the questions' heading level (none by default). An accordion saved with its `items` attribute is drawn from it until it is opened in the editor, which migrates it (spec 136 slice 5) |
 | `corex/hero` | A page hero — `eyebrow`/`title`/`subtitle`, gated CTA, optional media-library background `image` |
 | `corex/cta` | A call-to-action banner — `title`/`text` + a gated button |
 | `corex/team` | A responsive grid of `members[]` — media-library photo, `name`/`role`/`bio`; nameless skipped |
@@ -28,10 +28,11 @@ are composed of these units. Optional add-on; requires `corex-core` and the `cor
 | `corex/carousel` | The one slider primitive — a scroll-snap row of `slides[]`, `perView` (1–6), opt-in `autoplay`. Swipeable and keyboard-scrollable with **no JS**; enhanced with prev/next/dot buttons. Autoplay pauses on hover/focus/tab-blur and never runs under reduced motion; RTL-correct (spec 068) |
 
 Each is server-rendered, escaped, and token-styled; its CSS loads only where the block renders
-(declared in `block.json`). The component blocks (`stat`/`testimonial`/`pricing`/`accordion` plus the
+(declared in `block.json`). The component blocks (`stat`/`testimonial`/`pricing` plus the
 spec-035 set `hero`/`cta`/`team`/`gallery`/`tabs`) are **edited inline on the canvas** (RichText) while
 staying dynamic — the renderer reads the attributes and renders rich text safely with `wp_kses_post`;
-repeatable lists (pricing features, accordion panels, team members, gallery images, tabs) are inline rows.
+repeatable lists (pricing features, team members, gallery images, tabs) are inline rows. The accordion
+holds blocks instead (spec 136).
 Image blocks pick from the **media library** (storing `{id, url, alt}`, rendering real `<img>` with alt +
 lazy loading), and `tabs` ships **zero front-end JavaScript** (a CSS `:checked` radio/label disclosure). The
 `corex/form` block **selects a form from a dropdown** (the cap-gated `corex/v1/forms` route), not a typed slug.
@@ -49,7 +50,8 @@ styles, not blocks.
 
 Under the **Corex** inserter category: **hero, features, call-to-action, testimonial, contact**, plus the spec-054
 **section-header, content-split, stats, FAQ, latest-news**. The contact pattern composes the `corex/form` contact
-block (spec 007); stats/FAQ/news compose `corex/stat`/`corex/accordion`/`corex/posts`. Every pattern is styled
+block (spec 007); stats/FAQ/news compose `corex/stat`/`corex/accordion`/`corex/posts`, the FAQ with three
+questions as accordion items. Every pattern is styled
 only with `theme.json` presets (color slugs + `var:preset` spacing), uses logical CSS (RTL-correct), is
 translation-ready, and is intentionally **neutral** — a client brand restyles it via `brand.json` with no markup
 edits.

@@ -5,11 +5,15 @@
 	"title": "Corex Accordion",
 	"category": "corex",
 	"icon": "menu",
-	"description": "Accessible disclosure panels from a simple list (dynamic, no JavaScript).",
+	"description": "Questions that open to show their answers, each answer holding any blocks. Works without JavaScript.",
 	"textdomain": "corex",
 	"attributes": {
-		"items": { "type": "array", "default": [], "items": { "type": "object" } }
+		"items": { "type": "array", "default": [], "items": { "type": "object" } },
+		"oneOpen": { "type": "boolean", "default": false },
+		"headingLevel": { "type": "integer", "default": 0, "enum": [ 0, 2, 3, 4, 5, 6 ] }
 	},
+	"providesContext": { "corex/accordionHeadingLevel": "headingLevel" },
+	"allowedBlocks": [ "corex/accordion-item" ],
 	"supports": {
 		"html": false,
 		"anchor": true,
@@ -19,5 +23,5 @@
 	},
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",
-	"corex": { "renderer": "Corex\\Ui\\Blocks\\AccordionRenderer", "editor": "pending" }
+	"corex": { "renderer": "Corex\\Ui\\Blocks\\AccordionRenderer", "editor": "in-place" }
 }
