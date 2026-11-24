@@ -22911,3 +22911,30 @@ The constitution already says styling comes from `theme.json` only. Spec 149 mak
 - the drawings 149-D1 to 149-D4 name their values as these tokens, so the defaults they set are the ones shipped.
 
 *Not chosen.* Leaving restyling to a site's own CSS: it couples the site to CoreX's selectors and breaks on an update.
+
+## #683 -- The accordion holds items; how parity compares a block that holds blocks (spec 136, slice 5)
+
+**Date:** 2026-11-24. **Spec:** 136, slice 5 (FR-030 to FR-032, FR-039, FR-040; gap G-004). **Decided:** by the
+spec 136 session, after corex-reviewer's round.
+
+- **Parity for blocks that hold blocks** (extends #678). On the page side the integration test marks each child
+  block's non-empty output with `data-corex-parity-child`; both tree helpers skip the marked element and what it
+  holds, so the holder is compared on both sides and the children through their own fixtures. The marked element
+  must sit inside an element of the block, the markup drawn without the test's filters must carry no mark, and the
+  editor check refuses a mark in the editor's markup. A fixture can give the `context` a parent passes to a child.
+  A child block (its `block.json` names a `parent`) prints its parent's prefix.
+- **One at a time** is the `name` attribute of `<details>`, so it holds with scripts off. `AccordionGroups` gives
+  an accordion's items one shared name through `render_block_context`, keyed per accordion instance (two
+  accordions, a synced pattern used twice and a nested accordion each get their own, or none when the setting is
+  off). The old shape draws with a `wp_unique_id` name.
+- **Heading level** reaches the items as the context `corex/accordionHeadingLevel`: 0 is none (the default), 2 to 6
+  are offered, 1 is not (a page has its own main heading). A question with no level is a
+  `span.corex-accordion__question` inside the `summary`, the markup change a saved accordion shows.
+- **The chevron** is the kit's, at the end of the line, pointing forward when closed and down when open; the sheet
+  turns it and the build's right-to-left sheet mirrors the turn, with no `[dir]` rule. Reduced motion: no turn.
+- **An answer made only of empty paragraphs is no answer**, so a question saved without one opens to nothing, as
+  before.
+- **Old accordions** render in the new markup with every question and answer, and migrate to items when opened in
+  the editor (#675). An old item with no answer becomes an item with no inner blocks.
+- **The FAQ pattern stays sample content** (`is-corex-sample`): an editor sees three questions to replace; a visitor
+  sees the section's heading until an editor writes them, as with every CoreX sample. FR-040 says so.

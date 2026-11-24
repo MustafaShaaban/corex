@@ -89,11 +89,14 @@ block class. An element the page needs and the editor does not, and that carries
 fixture's `pageOnly` list; one that carries a block class (the newsletter's trap field against robots) is drawn in
 the editor as an empty element (DECISIONS #678, #682). Classes that are not the block's (`is-selected`, `wp-block`, WordPress's own) are
 ignored. Where a block holds other blocks, the element that holds them is compared and what the child blocks
-draw is compared through their own fixtures.
+draw is compared through their own fixtures: on the page side the test marks each child block's output
+(`data-corex-parity-child`) and both sides skip what it marks, and the marked element must sit inside an element of
+the block (DECISIONS #683). A child block (its `block.json` names a `parent`) prints its parent's prefix.
 
 **The fixture.** Each `in-place` block has a `parity.json` beside its `block.json`: the class `prefix`, the
 `attributes` to draw with, the `innerBlocks` when the block holds blocks, what the page `needs` to draw it (a
-current post), the optional `pageOnly` list, and the expected `tree`.
+current post, or a plugin: `plugin:<folder>/<file>.php`), the `context` a parent block passes to a child, the
+optional `pageOnly` list, and the expected `tree`.
 
 **The two tests.** Neither language reads the other; each compares its tree with the fixture's.
 - PHP, in the integration suite: every fixture is drawn through WordPress (`render_block`), so the renderer comes
@@ -431,7 +434,9 @@ network log shows no request for the video; the LCP entry is the poster.
   editor, tabs only by their button. A test MUST render one saved example of each old shape, and for tabs MUST
   compare it with today's markup; a test MUST prove that old tabs loaded and saved untouched stay in the old
   shape.
-- **FR-040**: The FAQ pattern of corex-ui MUST insert an accordion with items, so it shows questions.
+- **FR-040**: The FAQ pattern of corex-ui MUST insert an accordion with items, so it shows questions to an editor.
+  The accordion is sample content (`is-corex-sample`): a visitor sees its questions once an editor has written them
+  (DECISIONS #683).
 
 ### The hero (G-011)
 
