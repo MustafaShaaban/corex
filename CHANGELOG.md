@@ -125,6 +125,10 @@ to the wave's own entry when it is tagged from `release/gap-line`.
   as a file in its `parts/`, listed in its `templateParts` in the `mega-menu` area after the CoreX theme's two
   entries. Headers saved with a `<details>` panel keep working; `corex/header-saas` still places one beside its menu
   until slice 5 (FR-039). The parity standard's fixtures may now say a page `needs` a `panel`.
+- **A CoreX header's menu is drawn as the kit's bar** (spec 137 slice 3, the measured UI review; DECISIONS #705). In a
+  CoreX header every top-level item of the menu, WordPress's links and sub-menu toggles and the mega trigger, is 40px
+  tall with 12px on each side, weight 500, ink-soft at rest and ink on the quiet ground on hover, 4px apart, so the
+  row has one rhythm. A menu given a text colour keeps it. The opened phone menu is unchanged.
 
 ### Fixed
 
@@ -288,7 +292,10 @@ to the wave's own entry when it is tagged from `release/gap-line`.
     - **Mizzey** is not on this line.
     - **A site on the CoreX theme**: the four mega menu patterns change. They are now panels, offered when a
       panel is made, no longer `<details>` blocks to place in a header; a header that already holds one keeps it
-      and it keeps working. Their titles and descriptions change with them.
+      and it keeps working. Their titles and descriptions change with them. Its header's menu is drawn as the kit's
+      bar: its links gain padding, a hover ground and the ink-soft colour, and sit 4px apart instead of the block
+      gap, which `corex-navigation.css` sets (about 1 KB more on every page with a CoreX header). Muva and Perego run
+      their own themes, which load no `corex-navigation.css`.
 
 The CoreX theme in CoreX colours (spec 134, revamp release R2.2; DECISIONS #633 to #647, #649). Built on the visitor kit
 the owner approved on 15 November 2026 and the logo set he approved on 16 November 2026. Every template before and

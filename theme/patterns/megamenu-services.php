@@ -59,7 +59,7 @@ $corex_training_url = corex_pattern_page_url('training');
 		<!-- wp:group {"className":"corex-megamenu__item"} -->
 		<div class="wp-block-group corex-megamenu__item">
 			<!-- wp:paragraph {"className":"corex-megamenu__title"} -->
-			<p class="corex-megamenu__title"><?php if ($corex_training_url !== '') : ?><a href="<?php echo esc_url($corex_training_url); ?>"><?php endif; ?><?php echo esc_html__('Training', 'corex'); ?><?php if ($corex_training_url !== '') : ?></a><?php endif; ?> <span class="corex-mega__badge"><?php echo esc_html__('New', 'corex'); ?></span></p>
+			<p class="corex-megamenu__title"><?php if ($corex_training_url !== '') : ?><a href="<?php echo esc_url($corex_training_url); ?>"><?php endif; ?><?php echo esc_html__('Training', 'corex'); ?><?php if ($corex_training_url !== '') : ?></a><?php endif; ?> <span class="corex-badge corex-badge--accent"><?php echo esc_html__('New', 'corex'); ?></span></p>
 			<!-- /wp:paragraph -->
 			<!-- wp:paragraph {"className":"corex-megamenu__text"} -->
 			<p class="corex-megamenu__text"><?php echo esc_html__('Team workshops and onboarding.', 'corex'); ?></p>

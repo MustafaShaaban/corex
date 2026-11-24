@@ -56,6 +56,35 @@
 	font-family: var(--wp--preset--font-family--body);
 }
 
+.corex-header .wp-block-navigation__container:not(.is-menu-open *) {
+	gap: var(--wp--preset--spacing--10);
+}
+
+.corex-header
+.wp-block-navigation__container:not(.is-menu-open *) > .wp-block-navigation-item:not(.corex-mega-menu) > .wp-block-navigation-item__content {
+	display: inline-flex;
+	align-items: center;
+	box-sizing: border-box;
+	min-block-size: 2.5rem;
+	padding-inline: var(--wp--preset--spacing--25, var(--wp--preset--spacing--20));
+	border-radius: var(--wp--custom--radius--sm);
+	font-weight: 500;
+	text-decoration: none;
+}
+
+.corex-header
+.wp-block-navigation:not(.has-text-color)
+.wp-block-navigation__container:not(.is-menu-open *) > .wp-block-navigation-item:not(.corex-mega-menu) > .wp-block-navigation-item__content {
+	color: var(--wp--preset--color--ink-soft);
+}
+
+.corex-header
+.wp-block-navigation:not(.has-text-color)
+.wp-block-navigation__container:not(.is-menu-open *) > .wp-block-navigation-item:not(.corex-mega-menu) > .wp-block-navigation-item__content:hover {
+	background-color: var(--wp--preset--color--surface-alt);
+	color: var(--wp--preset--color--ink);
+}
+
 /* Visible, non-color-only focus on header controls (WCAG 2.2 AA). */
 .corex-header a:focus-visible,
 .corex-header button:focus-visible,

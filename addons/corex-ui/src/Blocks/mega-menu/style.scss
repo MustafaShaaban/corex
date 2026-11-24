@@ -15,9 +15,11 @@
 // bar, never over its padding, and its content is as wide as
 // `.corex-header__inner` (DECISIONS #705).
 
-// The item and its trigger, drawn as the menu's other links are: their face,
-// size and colour. WordPress makes every item of a menu `position: relative`,
-// with as many classes.
+// The item and its trigger, drawn as the kit's bar link (the theme draws the
+// menu's other links the same in a CoreX header): the menu's face at weight
+// 500, 2.5rem tall, ink-soft at rest and ink on the quiet ground on hover and
+// when open. WordPress makes every item of a menu `position: relative`, and
+// colours its links with `inherit`, with as many classes as these.
 .wp-block-navigation .wp-block-navigation-item.corex-mega-menu {
 	position: static;
 }
@@ -34,15 +36,20 @@
 	border: 0;
 	border-radius: var(--wp--custom--radius--sm);
 	background-color: transparent;
-	color: inherit;
 	font: inherit;
+	font-weight: 500;
 	text-align: start;
 	cursor: pointer;
 }
 
-.wp-block-navigation .corex-mega-menu > .corex-nav__trigger:hover,
+// A menu given a text colour keeps it on the trigger.
+.wp-block-navigation:not(.has-text-color)
+.wp-block-navigation-item.corex-mega-menu > .corex-nav__trigger {
+	color: var(--wp--preset--color--ink-soft);
+}
+
 .wp-block-navigation
-.corex-mega-menu > .corex-nav__trigger[aria-expanded="true"] {
+.wp-block-navigation-item.corex-mega-menu > .corex-nav__trigger:is(:hover, [aria-expanded="true"]) {
 	background-color: var(--wp--preset--color--surface-alt);
 	color: var(--wp--preset--color--ink);
 }
@@ -103,6 +110,22 @@
 // the item.
 .corex-mega-menu:not([data-corex-mega-menu="ready"]):is(:hover, :focus-within) > .corex-nav__panel {
 	display: block;
+}
+
+// And a bridge under the trigger while it is open, across the band between
+// the item and the card (the header's padding and the panel's own), so the
+// mouse keeps the item's hover on its way down. It reaches into the card,
+// which is part of the item too.
+.corex-mega-menu:not([data-corex-mega-menu="ready"]):is(:hover, :focus-within) > .corex-nav__trigger {
+	position: relative;
+}
+
+.corex-mega-menu:not([data-corex-mega-menu="ready"]):is(:hover, :focus-within) > .corex-nav__trigger::after {
+	content: "";
+	position: absolute;
+	inset-block-start: 100%;
+	inset-inline: 0;
+	block-size: 4rem;
 }
 
 // The panel's surface: the kit's MegaMenu card, around what the part holds.
@@ -190,12 +213,12 @@
 
 .corex-megamenu > .corex-megamenu__list {
 	flex: 2 1 0;
-	min-inline-size: min(24rem, 100%);
+	min-inline-size: min(15rem, 100%);
 }
 
 .corex-megamenu > .corex-megamenu__feature {
 	flex: 1 1 0;
-	min-inline-size: min(12rem, 100%);
+	min-inline-size: min(15rem, 100%);
 }
 
 // The parts are spaced by their gaps: the margins WordPress's flow layout
@@ -250,6 +273,61 @@
 	text-decoration: underline;
 }
 
+// The kit's Badge, its accent form, for a badge an entry's title holds.
+.corex-megamenu .corex-badge {
+	display: inline-flex;
+	align-items: center;
+	box-sizing: border-box;
+	min-block-size: 1.5rem;
+	padding-inline: var(--wp--preset--spacing--25, var(--wp--preset--spacing--20));
+	border-radius: var(--wp--custom--radius--full);
+	background-color: var(--wp--preset--color--surface-strong);
+	color: var(--wp--preset--color--ink);
+	font-family: var(--wp--preset--font-family--heading);
+	font-size: var(--wp--preset--font-size--xs);
+	font-weight: 600;
+	line-height: 1;
+	vertical-align: middle;
+	white-space: nowrap;
+}
+
+.corex-megamenu .corex-badge--accent {
+	background-color: var(--wp--custom--color--accent-subtle, var(--wp--preset--color--surface-alt));
+	color: var(--wp--preset--color--accent-dark);
+}
+
+// The kit's eyebrow and standalone link, for the side card.
+.corex-megamenu .corex-eyebrow {
+	color: var(--wp--preset--color--accent-dark);
+	font-family: var(--wp--preset--font-family--mono);
+	font-size: var(--wp--preset--font-size--xs);
+	font-weight: 500;
+	letter-spacing: 0.12em; // corex-token-allow: the kit's eyebrow tracking
+	text-transform: uppercase;
+}
+
+.corex-megamenu .corex-link--standalone {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--wp--preset--spacing--10);
+	font-family: var(--wp--preset--font-family--heading);
+	font-weight: 600;
+	text-decoration: none;
+}
+
+.corex-megamenu .corex-link--standalone:hover {
+	text-decoration: underline;
+}
+
+// The arrow points the way the page reads, and is not read out.
+.corex-megamenu .corex-link--standalone::after {
+	content: "\2192" / "";
+}
+
+[dir="rtl"] .corex-megamenu .corex-link--standalone::after {
+	content: "\2190" / "";
+}
+
 .corex-megamenu__text {
 	margin: 0;
 	color: var(--wp--preset--color--ink-soft);
@@ -277,7 +355,7 @@
 // Arabic pages: the panel's text and its titles in the Arabic face, as the
 // menu's links are.
 :root:is(:lang(ar), :lang(fa), :lang(ur), :lang(ps), :lang(ckb), :lang(ug))
-:is(.corex-mega-menu > .corex-nav__panel, .corex-megamenu__title) {
+:is(.corex-mega-menu > .corex-nav__panel, .corex-megamenu__title, .corex-megamenu .corex-badge, .corex-megamenu .corex-eyebrow, .corex-megamenu .corex-link--standalone) {
 	font-family: var(--wp--preset--font-family--arabic);
 	letter-spacing: 0;
 }

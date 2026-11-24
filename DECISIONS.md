@@ -22774,7 +22774,22 @@ the spec 137 session, while building slice 3, carrying out #691.
   (constitution VI is met: they are declared in `block.json`); inside the opened phone menu the trigger is a button
   that does nothing until slice 4; an anchor set on an item is printed on each copy, so slice 4, which draws the
   menu twice, must handle the repeated id; each copy of an item reads its part twice, uncached (one lookup, one
-  render).
+  render); WordPress's opened phone menu is white in the dark style too, so a panel's light titles read at 1.1:1
+  there until slice 4 draws the phone menu in the theme's colours.
+- After the measured UI review (2026-11-24): the bar row has one rhythm, the kit's bar link. In a CoreX header every
+  top-level item of the menu, WordPress's links and sub-menu toggles as well as the mega trigger, is 2.5rem tall
+  with spacing-25 inline padding, weight 500 in the menu's face, ink-soft at rest and ink on surface-alt on hover,
+  and the list's gap is spacing-10 (the kit's `.corex-nav__list`), so 28px separates every pair of labels as the
+  board draws. The theme's `corex-navigation.css` draws WordPress's items (presentation, constitution I); the
+  block's style draws its trigger, which the theme's rule leaves out so the open trigger keeps ink. "In the bar"
+  is "not inside WordPress's opened phone menu" (`:not(.is-menu-open *)`), as for the panel, so no width is
+  named. A menu given a text colour keeps it. The rules add 1,084 bytes to `corex-navigation.css`, which every
+  page with a CoreX header loads.
+- The services panel's badge is the kit's accent Badge and the product panel's side card the board's: an eyebrow,
+  a title, a line and a standalone link with an arrow that turns in a right-to-left page, no button. The block's
+  style draws the Badge, the eyebrow and the link inside a panel only. The patterns' layout uses the kit's 15rem.
+  Without the script, a bridge under the open trigger keeps the item's hover across the band between the item and
+  the card.
 
 *Not chosen.* The panel anchored to `.corex-header__inner`: its bottom edge is inside the header's padding, which is
 the overlap the slice 1 review measured. A script that measures the bar: the panel would move after it is drawn,

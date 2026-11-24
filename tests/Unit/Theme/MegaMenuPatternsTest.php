@@ -108,3 +108,29 @@ it('FR-020: keeps the script and the styles that serve headers saved with detail
         ->and((string) file_get_contents($root . '/css/corex-navigation.css'))->toContain('.corex-mega > summary')
         ->and((string) file_get_contents($root . '/css/corex-navigation-collapse.css'))->toContain('.corex-mega[open] > .corex-mega__panel');
 });
+
+it('UI review: draws the services badge as the kit\'s accent badge, not the old details-era badge', function () {
+    $pattern = corexMegaPattern('services');
+
+    expect($pattern)->toContain('<span class="corex-badge corex-badge--accent">')
+        ->and($pattern)->not->toContain('corex-mega__badge');
+});
+
+it('UI review: draws the product side card as an eyebrow, a title, a line and a standalone link, with no button', function () {
+    $pattern = corexMegaPattern('product');
+    $card = substr($pattern, (int) strpos($pattern, 'corex-megamenu__feature'));
+
+    expect($card)->toContain('<p class="corex-eyebrow">')
+        ->and($card)->toContain('<p class="corex-megamenu__title">')
+        ->and($card)->toContain('<p class="corex-megamenu__text">')
+        ->and($card)->toContain('<a class="corex-link--standalone"')
+        ->and($card)->not->toContain('wp:buttons')
+        ->and($card)->not->toContain('corex_pattern_button');
+});
+
+it('UI review: lays the panel patterns out with the kit\'s own length', function () {
+    $style = (string) file_get_contents(ThemeContract::root() . '/addons/corex-ui/src/Blocks/mega-menu/style.scss');
+    preg_match_all('/\d*\.?\d+rem/', $style, $lengths);
+
+    expect(array_values(array_diff(array_unique($lengths[0]), ['2.5rem', '15rem', '4rem', '1.5rem'])))->toBe([]);
+});

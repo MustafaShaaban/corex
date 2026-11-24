@@ -41,7 +41,9 @@ the words a screen reader hears after the current language). "Menu" and "List" a
 (its block title, description and three keywords, the template part area's name and description, its settings in the
 editor, and the four panel patterns' titles and descriptions, which replace the old ones). Mega menu stays قائمة
 موسّعة as the old pattern titles had it; a panel is لوحة; a template part is جزء قالب. The patterns' descriptions name
-the editor's words in «», so the reviewer keeps them matching the strings they quote.
+the editor's words in «», so the reviewer keeps them matching the strings they quote. `# Drafted 2026-11-24 (spec 137
+slice 3, UI review)`: the product panel's side card (its eyebrow "Guide", title, line and link) and its pattern's
+description, which now names a guide.
 
 <details>
 <summary>The 825 originals, by the plug-in or add-on that asks for them</summary>

@@ -50,7 +50,11 @@ const PANEL_CHILD = 'corex-e2e-panel-child';
 const CHILD_PANEL = 'e2e-child-panel';
 
 async function adminSession( browser ) {
-	const context = await browser.newContext( { storageState: STORAGE_STATE } );
+	// With script, whatever the test that runs first asks of its own page.
+	const context = await browser.newContext( {
+		storageState: STORAGE_STATE,
+		javaScriptEnabled: true,
+	} );
 	const page = await context.newPage();
 	await page.goto( '/wp-admin/' );
 	const nonce = await page.evaluate( () => window.wpApiSettings.nonce );
@@ -592,6 +596,179 @@ test.describe( 'without the script', () => {
 		await services.trigger.focus();
 		await expect( services.panel ).toBeVisible();
 	} );
+
+	test( 'UI review, FR-016: a mouse moves from the trigger down to the card with no script, and the panel stays open', async ( {
+		page,
+	} ) => {
+		await page.setViewportSize( { width: 1280, height: 900 } );
+		await page.goto( headerPath );
+		const [ services ] = megaItems( page );
+		const trigger = await services.trigger.boundingBox();
+		const x = trigger.x + trigger.width / 2;
+
+		await page.mouse.move( x, trigger.y + trigger.height / 2 );
+		await expect( services.panel ).toBeVisible();
+		const card = await services.panel
+			.locator( '.wp-block-template-part' )
+			.boundingBox();
+
+		// Straight down, a pixel at a time, across the band between the item and the card.
+		for (
+			let y = trigger.y + trigger.height / 2;
+			y <= card.y + 20;
+			y += 2
+		) {
+			await page.mouse.move( x, y );
+		}
+
+		await expect( services.panel ).toBeVisible();
+	} );
+} );
+
+/**
+ * The colour, size and weight a token resolves to on the page, read from a probe element.
+ *
+ * @param {import('@playwright/test').Page} page   The page.
+ * @param {Object}                          tokens Property names by key, each a CSS value.
+ * @return {Promise<Object>} What each one computes to, by key.
+ */
+function resolveTokens( page, tokens ) {
+	return page.locator( HEADER ).evaluate( ( header, values ) => {
+		const probe = document.createElement( 'span' );
+		header.appendChild( probe );
+		const read = Object.fromEntries(
+			Object.entries( values ).map( ( [ name, [ property, value ] ] ) => {
+				probe.style.setProperty( property, value );
+				const computed = window
+					.getComputedStyle( probe )
+					.getPropertyValue( property );
+				probe.style.removeProperty( property );
+				return [ name, computed ];
+			} )
+		);
+		probe.remove();
+		return read;
+	}, tokens );
+}
+
+const TOKENS = {
+	inkSoft: [ 'color', 'var(--wp--preset--color--ink-soft)' ],
+	ink: [ 'color', 'var(--wp--preset--color--ink)' ],
+	surfaceAlt: [ 'background-color', 'var(--wp--preset--color--surface-alt)' ],
+	accentSubtle: [
+		'background-color',
+		'var(--wp--custom--color--accent-subtle)',
+	],
+	accentDark: [ 'color', 'var(--wp--preset--color--accent-dark)' ],
+	xs: [ 'font-size', 'var(--wp--preset--font-size--xs)' ],
+};
+
+test( "UI review: every item of the bar is the kit's bar link, so the row has one rhythm", async ( {
+	page,
+} ) => {
+	await openHeader( page );
+	const tokens = await resolveTokens( page, TOKENS );
+	const row = await page.locator( HEADER ).evaluate( ( header ) => {
+		const list = header.querySelector( '.wp-block-navigation__container' );
+		const controls = [ ...list.children ].map( ( item ) =>
+			item.querySelector( ':scope > a, :scope > button' )
+		);
+
+		return {
+			gap: window.getComputedStyle( list ).columnGap,
+			items: controls.map( ( control ) => {
+				const style = window.getComputedStyle( control );
+				return {
+					name: control.textContent.trim(),
+					height: control.getBoundingClientRect().height,
+					start: style.paddingInlineStart,
+					end: style.paddingInlineEnd,
+					weight: style.fontWeight,
+					color: style.color,
+					face: style.fontFamily,
+				};
+			} ),
+		};
+	} );
+
+	expect( row.gap, 'the gap between items, the kit list gap' ).toBe( '4px' );
+	expect( row.items ).toHaveLength( 6 );
+	for ( const item of row.items ) {
+		expect( item, `${ item.name } at rest` ).toEqual( {
+			name: item.name,
+			height: 40,
+			start: '12px',
+			end: '12px',
+			weight: '500',
+			color: tokens.inkSoft,
+			face: row.items[ 0 ].face,
+		} );
+	}
+} );
+
+test( 'UI review: a plain link and a trigger take the same hover, ink on the quiet ground', async ( {
+	page,
+} ) => {
+	await openHeader( page );
+	const tokens = await resolveTokens( page, TOKENS );
+	const header = page.locator( HEADER );
+	const link = header.locator( '.wp-block-navigation-link a' ).first();
+	const [ services ] = megaItems( page );
+
+	await link.hover();
+	await expect( link ).toHaveCSS( 'color', tokens.ink );
+	await expect( link ).toHaveCSS( 'background-color', tokens.surfaceAlt );
+
+	await services.trigger.hover();
+	await expect( services.trigger ).toHaveCSS( 'color', tokens.ink );
+	await expect( services.trigger ).toHaveCSS(
+		'background-color',
+		tokens.surfaceAlt
+	);
+} );
+
+test( "UI review: the services panel's badge is the kit's accent badge", async ( {
+	page,
+} ) => {
+	await openHeader( page );
+	const tokens = await resolveTokens( page, TOKENS );
+	const [ services ] = megaItems( page );
+	await services.trigger.click();
+	const badge = services.panel.locator( '.corex-badge' );
+
+	await expect( badge ).toHaveText( 'New' );
+	await expect( badge ).toHaveCSS( 'background-color', tokens.accentSubtle );
+	await expect( badge ).toHaveCSS( 'color', tokens.accentDark );
+	await expect( badge ).toHaveCSS( 'font-size', tokens.xs );
+	await expect( badge ).toHaveCSS( 'padding-inline-start', '12px' );
+	expect( ( await badge.boundingBox() ).height ).toBe( 24 );
+	expect(
+		parseFloat(
+			await badge.evaluate(
+				( element ) =>
+					window.getComputedStyle( element ).borderTopLeftRadius
+			)
+		)
+	).toBeGreaterThanOrEqual( 12 );
+	await expect( services.panel.locator( '.corex-mega__badge' ) ).toHaveCount(
+		0
+	);
+} );
+
+test( "UI review: the product panel's side card is an eyebrow, a title, a line and a link, with no button", async ( {
+	page,
+} ) => {
+	await openHeader( page );
+	const [ , products ] = megaItems( page );
+	await products.trigger.click();
+	const card = products.panel.locator( '.corex-megamenu__feature' );
+
+	await expect( card.locator( '.corex-eyebrow' ) ).toHaveText( 'Guide' );
+	await expect( card.locator( '.corex-megamenu__title' ) ).toHaveText(
+		'How to brief a web project'
+	);
+	await expect( card.locator( '.corex-megamenu__text' ) ).toHaveCount( 1 );
+	await expect( card.locator( '.wp-block-button' ) ).toHaveCount( 0 );
 } );
 
 test( 'SC-007: a header saved from corex/header-saas at v0.48.1 still opens its panel and its search', async ( {

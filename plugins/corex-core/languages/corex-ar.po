@@ -15604,8 +15604,8 @@ msgstr "لوحة قائمة موسّعة: المنتج"
 # Drafted 2026-11-23 (spec 137 slice 3); native review owed, see specs/121-tokens-and-type/arabic-review.md
 #: theme/patterns/megamenu-product.php
 msgctxt "Pattern description"
-msgid "The content of a mega menu panel: product links beside a card for what is new. To use it, turn on the CoreX UI add-on, add a Mega menu item to a Navigation block, and in the item's settings, under New panel, choose this pattern and select Create panel."
-msgstr "محتوى لوحة قائمة موسّعة: روابط المنتج بجانب بطاقة لما هو جديد. لاستخدامها، فعّل الوحدة الإضافية CoreX UI، وأضف «عنصر قائمة موسّعة» إلى مكوّن التنقل، ثم في إعدادات العنصر، تحت «لوحة جديدة»، اختر هذا النمط واضغط «إنشاء لوحة»."
+msgid "The content of a mega menu panel: product links beside a card for a guide. To use it, turn on the CoreX UI add-on, add a Mega menu item to a Navigation block, and in the item's settings, under New panel, choose this pattern and select Create panel."
+msgstr "محتوى لوحة قائمة موسّعة: روابط المنتج بجانب بطاقة لدليل. لاستخدامها، فعّل الوحدة الإضافية CoreX UI، وأضف «عنصر قائمة موسّعة» إلى مكوّن التنقل، ثم في إعدادات العنصر، تحت «لوحة جديدة»، اختر هذا النمط واضغط «إنشاء لوحة»."
 
 # Drafted 2026-11-23 (spec 137 slice 3); native review owed, see specs/121-tokens-and-type/arabic-review.md
 #: theme/patterns/megamenu-services.php
@@ -21713,3 +21713,23 @@ msgstr "تعذّر إنشاء اللوحة."
 #: addons/corex-ui/src/Blocks/mega-menu/panel-controls.js
 msgid "No panel pattern is available."
 msgstr "لا يتوفر نمط للوحات."
+
+# Drafted 2026-11-24 (spec 137 slice 3, UI review); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: theme/patterns/megamenu-product.php
+msgid "Guide"
+msgstr "دليل"
+
+# Drafted 2026-11-24 (spec 137 slice 3, UI review); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: theme/patterns/megamenu-product.php
+msgid "How to brief a web project"
+msgstr "كيف تكتب موجز مشروع موقع"
+
+# Drafted 2026-11-24 (spec 137 slice 3, UI review); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: theme/patterns/megamenu-product.php
+msgid "Six questions to answer before you ask for a quote."
+msgstr "ستة أسئلة تجيب عنها قبل أن تطلب عرض سعر."
+
+# Drafted 2026-11-24 (spec 137 slice 3, UI review); native review owed, see specs/121-tokens-and-type/arabic-review.md
+#: theme/patterns/megamenu-product.php
+msgid "Read the guide"
+msgstr "اقرأ الدليل"
