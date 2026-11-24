@@ -116,6 +116,14 @@ then the CoreX theme's file is used. A file you do not create is not a gap: it i
   nothing completes it, so a list of one entry overwrites the CoreX theme's first. The generated `theme.json`
   declares neither list. A client theme that declares `templateParts` repeats every entry of the CoreX theme's, in
   the same order, then adds its own after them; `npm run verify:client-theme` checks it.
+- **Mega menu panels.** A panel is a template part of the area "Mega menu panels" (`mega-menu`), which the
+  CoreX UI add-on registers, so a panel part belongs only on a site with that add-on on: without it WordPress
+  raises a notice for a part in an area nobody registered, and there is no mega menu item to open it. To ship one
+  as a file, put it in `acme-theme/parts/` (`parts/services-panel.html`) and add its entry after the CoreX
+  theme's two, as the rule above says:
+  `{ "name": "services-panel", "title": "Services panel", "area": "mega-menu" }`. Choose it on a Mega menu item in
+  the Navigation block. A panel saved in the Site Editor replaces the file, as for any part; a draft or an empty
+  panel is not shown, and neither is its item (spec 137, DECISIONS #705).
 - **The launch page** is `acme-theme/templates/coming-soon.html`, the page visitors see while the site is in
   Coming soon mode. See [Coming soon mode](../03-operations/coming-soon.md).
 

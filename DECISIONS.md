@@ -1840,6 +1840,7 @@ Status: Final.
 
 ## #103 -- Spec 058 M3 navigation: native primitives, theme markup, plugin-registered conditional assets
 Date: 2026-06-20
+**Amended by #691:** point 1 superseded (the mega menu is a block in the menu with a template part panel).
 Context: M3 needed a reusable header/mega-menu/footer system without a builder, honoring constitution Principle I
 (theme is a presentation-only skin), Principle VI (assets load only where rendered), and the no-JS/RTL/WCAG
 Definition of Done. The owner approved authoring the navigation/footer design handoff from ROADMAP §6 + the merged
@@ -22749,6 +22750,31 @@ the spec 137 session, while building slice 3, carrying out #691.
   End move among the menu's items, mirrored right to left; keys typed in a field of a panel stay the field's.
 - The panel patterns are laid out by their own widths (a flex row whose two parts wrap), never the window's, so a
   panel is right at any width and in the editor's canvas.
+
+- After review (2026-11-24): a panel is a **published** part (`get_block_template()` returns drafts and trashed
+  parts, which WordPress's part block does not draw and, with `WP_DEBUG_DISPLAY`, names as unavailable), and an
+  empty panel is judged inside the wrapper WordPress always prints: no text and nothing that shows without text
+  (an image, an icon, a control) is empty, and its item is not drawn (FR-012). The mouse leaving no longer closes a
+  panel while keyboard focus is inside it; a key pressed with Alt, Ctrl or Meta is left to the browser; opening a
+  panel closes the menu's open WordPress sub-menu through its own toggle, and opening a sub-menu closes the panel as
+  any click outside does.
+- The panel spans its anchor and its padding beside and above the card is transparent, so the panel takes no
+  pointer there: a page whose header sits low had the pointer at the window's side still "in" the item, and the
+  panel never closed (found in the parallel browser run). Only what the panel holds takes the pointer.
+- The four panel patterns are `Inserter: no`: in the inserter they would land on a page as blocks no style draws.
+  The item's "Start from" still offers them, because it reads every registered pattern from WordPress's pattern
+  route, which lists patterns the inserter hides; WordPress's own "choose a pattern" when a part is added to the
+  area does not.
+- A child theme ships a panel as a file in its `parts/`, with an entry in its `theme.json` `templateParts` in the
+  `mega-menu` area. WordPress merges that list with the parent's by position, so the child repeats the CoreX
+  theme's header and footer entries before its own: a list holding the panel alone took the header's place and the
+  header part lost its area (measured on the fixture `tests/e2e/fixtures/themes/corex-e2e-panel-child`).
+- Left as they are, for the slices or the specs that own them: the block's script and style load wherever the
+  block runs, also for an item that prints nothing, because WordPress enqueues them after the render callback
+  (constitution VI is met: they are declared in `block.json`); inside the opened phone menu the trigger is a button
+  that does nothing until slice 4; an anchor set on an item is printed on each copy, so slice 4, which draws the
+  menu twice, must handle the repeated id; each copy of an item reads its part twice, uncached (one lookup, one
+  render).
 
 *Not chosen.* The panel anchored to `.corex-header__inner`: its bottom edge is inside the header's padding, which is
 the overlap the slice 1 review measured. A script that measures the bar: the panel would move after it is drawn,

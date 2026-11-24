@@ -117,4 +117,24 @@ describe( 'FR-013: the label is typed in place, in the menu', () => {
 		// The panel is the page's alone: in the menu the item is its trigger.
 		expect( item.querySelector( '.corex-nav__panel' ) ).toBeNull();
 	} );
+
+	test( 'takes one line: a break typed in the label would print its words run together', () => {
+		const { RichText } = require( '@wordpress/block-editor' );
+		const element = registeredBlock( metadata.name ).edit( {
+			attributes: { label: 'Our services', panel: 'services' },
+			setAttributes: () => {},
+		} );
+		const find = ( node ) => {
+			if ( ! node || typeof node !== 'object' ) {
+				return null;
+			}
+			if ( node.type === RichText ) {
+				return node;
+			}
+			const children = [ node.props?.children ].flat();
+			return children.map( find ).find( Boolean ) || null;
+		};
+
+		expect( find( element ).props.disableLineBreaks ).toBe( true );
+	} );
 } );

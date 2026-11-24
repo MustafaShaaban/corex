@@ -17,10 +17,10 @@ use Brain\Monkey\Functions;
 use Corex\Ui\Blocks\MegaMenuArea;
 use Corex\Ui\Blocks\TemplatePartMegaMenuPanels;
 
-/** A template part as WordPress's `get_block_template()` returns one. */
-function megaMenuPanelsPart(string $area, string $content): object
+/** A template part as WordPress's `get_block_template()` returns one: a draft or a trashed part too. */
+function megaMenuPanelsPart(string $area, string $content, string $status = 'publish'): object
 {
-    return (object) ['area' => $area, 'content' => $content];
+    return (object) ['area' => $area, 'content' => $content, 'status' => $status];
 }
 
 beforeEach(function () {
@@ -28,6 +28,8 @@ beforeEach(function () {
         'corex//services' => megaMenuPanelsPart(MegaMenuArea::AREA, '<!-- wp:paragraph --><p>Consulting</p><!-- /wp:paragraph -->'),
         'corex//footer' => megaMenuPanelsPart('footer', '<!-- wp:paragraph --><p>Footer</p><!-- /wp:paragraph -->'),
         'corex//blank' => megaMenuPanelsPart(MegaMenuArea::AREA, "  \n "),
+        'corex//draft' => megaMenuPanelsPart(MegaMenuArea::AREA, '<!-- wp:paragraph --><p>Draft</p><!-- /wp:paragraph -->', 'draft'),
+        'corex//trashed' => megaMenuPanelsPart(MegaMenuArea::AREA, '<!-- wp:paragraph --><p>Gone</p><!-- /wp:paragraph -->', 'trash'),
     ];
     $this->drawn = [];
 
@@ -57,6 +59,8 @@ it('FR-012: draws nothing for a part that does not exist, belongs to another are
     'missing' => ['deleted'],
     'another area' => ['footer'],
     'empty' => ['blank'],
+    'a draft, which WordPress\'s part block does not draw' => ['draft'],
+    'a trashed part' => ['trashed'],
     'no slug' => [''],
 ]);
 
@@ -86,8 +90,23 @@ it('FR-012: lets the panel be drawn again after a draw that failed', function ()
     expect($this->panels->render('services'))->toBe('<div>again</div>');
 });
 
-it('FR-012: draws nothing when WordPress draws the part as nothing', function () {
-    Functions\when('render_block')->justReturn("  \n");
+it('FR-012: draws nothing when the part, inside the wrapper WordPress always prints, shows nothing', function (string $inside) {
+    Functions\when('render_block')->justReturn('<div class="wp-block-template-part">' . $inside . '</div>');
 
     expect($this->panels->render('services'))->toBe('');
-});
+})->with([
+    'no block drew anything' => [''],
+    'an empty group' => ['<div class="wp-block-group is-layout-flow"></div>'],
+    'spaces and a comment' => ["<div class=\"wp-block-group\">&nbsp; \n<!-- note --></div>"],
+]);
+
+it('FR-012: draws a part that shows something with no text, an image or a control', function (string $inside) {
+    $markup = '<div class="wp-block-template-part">' . $inside . '</div>';
+    Functions\when('render_block')->justReturn($markup);
+
+    expect($this->panels->render('services'))->toBe($markup);
+})->with([
+    'an image' => ['<figure class="wp-block-image"><img src="a.png" alt=""></figure>'],
+    'an icon' => ['<svg viewBox="0 0 24 24"></svg>'],
+    'a field' => ['<form><input type="search" name="s"></form>'],
+]);

@@ -84,6 +84,17 @@
 	white-space: normal;
 }
 
+// The panel spans its anchor; its padding beside and above the card is not the
+// panel's to take: the pointer reaches the page there, and leaving the card
+// leaves the item.
+.corex-mega-menu > .corex-nav__panel {
+	pointer-events: none;
+}
+
+.corex-mega-menu > .corex-nav__panel > * {
+	pointer-events: auto;
+}
+
 .corex-mega-menu > .corex-nav__panel[hidden] {
 	display: none;
 }

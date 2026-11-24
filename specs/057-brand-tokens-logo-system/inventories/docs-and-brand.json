@@ -203,11 +203,12 @@
     {
       "path": "docs-app/src/content/docs/design-system/navigation.md",
       "lines": [
-        53,
-        54,
-        55,
-        56,
-        57
+        40,
+        57,
+        58,
+        59,
+        60,
+        61
       ],
       "topics": [
         "generated-properties",

@@ -103,23 +103,28 @@ to the wave's own entry when it is tagged from `release/gap-line`.
   its `hreflang` and a 44px target. Its script and style load only where it prints something. It sits beside a
   Navigation block, never inside one. `docs/internal/COREX-FRAMEWORK.md` describes the source in place of the
   `I18nHandler`, which was never built.
-- **A mega menu is an item of the menu** (spec 137 slice 3, gap G-013; FR-009 to FR-021, US-NAV-02 but its phone
-  criterion, US-NAV-04; DECISIONS #691, #705, #706). The CoreX UI add-on adds the block "Mega menu item"
-  (`corex/mega-menu`), which the Navigation block accepts beside its links, and the template part area "Mega menu
-  panels" (`mega-menu`). An item holds a label, typed in place in the menu, and its panel, a template part of that
-  area chosen in the item's settings, which also open the panel for editing and make a new one from a panel
-  pattern. On the page the item is a list item of the menu holding a button and its panel: the panel opens under
-  the header, as wide as the header's content, inside the window in both directions, and the header keeps its
-  height. A mouse resting on the item for 150ms opens it; a click, a tap, Enter or Space opens and closes it; it
-  closes when focus leaves it, on a click outside and on Escape, which returns focus to the button; arrow keys,
-  Home and End move among its links and among the menu's items, mirrored right to left. Without the script a
-  panel opens while the pointer or the focus is in its item. An item with no label or no panel, or whose panel
-  was deleted, is not shown, and a panel that holds its own menu is drawn once. The trigger is drawn in the menu's
-  face, the Arabic face on an Arabic page; its caret turns, without motion under reduced motion. Inside
-  WordPress's opened phone menu the panel shows in place for now: the group that opens one at a time is slice 4's.
-  The four mega menu patterns (`corex/megamenu-simple`, `-services`, `-product`, `-docs`) are now the content of a
-  panel, offered for the new area, and say how to put one on an item. Headers saved with a `<details>` panel keep
-  working. The parity standard's fixtures may now say a page `needs` a `panel`.
+- **A mega menu is an item of the menu** (spec 137 slice 3, gap G-013; FR-009 to FR-021 but the phone group of
+  FR-018, slice 4's, and FR-020's first sentence, slice 5's (FR-039); US-NAV-02 but its phone criterion, US-NAV-04;
+  DECISIONS #691, #705, #706). The CoreX UI add-on adds the block "Mega menu item" (`corex/mega-menu`), which the
+  Navigation block accepts beside its links, and the template part area "Mega menu panels" (`mega-menu`). An item
+  holds a label, typed in place in the menu, and its panel, a template part of that area chosen in the item's
+  settings, which also open the panel for editing and make a new one from a panel pattern. The label takes one line.
+  On the page the item is a list item of the menu holding a button and its panel: the panel opens under the header,
+  as wide as the header's content, inside the window in both directions, and the header keeps its height. A mouse
+  resting on the item for 150ms opens it; a click, a tap, Enter or Space opens and closes it; it closes when focus
+  leaves it, on a click outside and on Escape, which returns focus to the button; arrow keys, Home and End move
+  among its links and among the menu's items, mirrored right to left. Without the script a panel opens while the
+  pointer or the focus is in its item. The mouse leaving does not close a panel while keyboard focus is in it; a key
+  pressed with Alt, Ctrl or Meta stays the browser's; opening a panel closes the menu's open WordPress sub-menu, and
+  opening a sub-menu closes the panel. An item with no label or no panel, or whose panel was deleted, is a draft or
+  shows nothing, is not shown, and a panel that holds its own menu is drawn once. The trigger is drawn in the menu's
+  face, the Arabic face on an Arabic page; its caret turns, without motion under reduced motion. Inside WordPress's
+  opened phone menu the panel shows in place for now: the group that opens one at a time is slice 4's. The four mega
+  menu patterns (`corex/megamenu-simple`, `-services`, `-product`, `-docs`) are now the content of a panel, kept out
+  of the inserter and offered where a panel is made, and say how to put one on an item. A child theme ships a panel
+  as a file in its `parts/`, listed in its `templateParts` in the `mega-menu` area after the CoreX theme's two
+  entries. Headers saved with a `<details>` panel keep working; `corex/header-saas` still places one beside its menu
+  until slice 5 (FR-039). The parity standard's fixtures may now say a page `needs` a `panel`.
 
 ### Fixed
 
@@ -271,9 +276,9 @@ to the wave's own entry when it is tagged from `release/gap-line`.
     - **Perego**: the same. Its own language toggle is untouched: nothing of CoreX replaces it or reads it.
     - **Mizzey**: not on this line.
   - **Spec 137 slice 3 (G-013).** No upgrade step, no stored data changed. Slices 1 (#520, `fbe03540`) and 2
-    (#522, `78b00c0e`) are merged; slice 3 is built on its branch, `spec/137-slice-3-mega-menu`. It rests on slice 1
-    and on spec 136's renderer base (#496, #506, #511), all after v0.48.1; carried to `release/gap-line` only with
-    slice 4.
+    (#522, `78b00c0e`) are merged; slice 3 is built on its branch, `spec/137-slice-3-mega-menu`. It rests on slice 1,
+    on spec 136's renderer base (#496, #506, #511) and on spec 121 (#470: the Arabic catalogue, its glossary and
+    review, and the e2e Arabic fixture), all after v0.48.1; carried to `release/gap-line` only with slice 4.
     - **Muva** runs no CoreX UI block, and the spec's client notes record the add-on only on Perego: its pages
       print the same markup, scripts and styles as before. Where the add-on is on, its editor gains the item and
       the area as Perego's does, and both do nothing until used.

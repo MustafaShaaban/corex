@@ -36,6 +36,10 @@ stays a presentation-only skin (constitution Principle I).
   its links, and Left and Right among the menu's items, mirrored right to left. Without JavaScript a panel opens
   while the pointer or the focus is inside its item. Outside a CoreX header the panel is as wide as the Navigation
   block; a theme widens it by giving an ancestor `position: relative`, with the elements between static.
+- **Panels in a child theme**: a panel part belongs only on a site with the CoreX UI add-on on, which registers
+  its area. A child theme ships one as a file in its `parts/` and lists it in its `theme.json` `templateParts`
+  with `"area": "mega-menu"`, after the CoreX theme's header and footer entries, which it repeats: WordPress
+  merges that list with the parent's by position. A draft or an empty panel is not shown, nor is its item.
 - **Headers saved earlier** keep their native `<details>` panels: the buildless `theme/assets/js/corex-navigation.js`
   still opens one at a time and closes it on Escape or an outside click, returning focus to its summary.
 - **Sticky / transparent header**: `corex/header-transparent` is `position: sticky` and transparent over a hero; the

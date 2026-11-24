@@ -1,0 +1,7 @@
+/*
+Theme Name:  CoreX E2E panel child (test fixture)
+Template:    corex
+Description: Test fixture. A child of the CoreX theme that ships one mega menu panel as a file, declared in its theme.json in the mega-menu area, with no file of the CoreX theme copied (spec 137, FR-010; DECISIONS #705). Used by tests/e2e/mega-menu.spec.js.
+Version:     1.0.0
+Text Domain: corex-e2e-panel-child
+*/

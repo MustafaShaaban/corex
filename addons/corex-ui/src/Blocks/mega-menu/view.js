@@ -1,13 +1,15 @@
 /**
- * corex/mega-menu on the page (spec 137; US-NAV-04, FR-015, FR-016, FR-018; DECISIONS #691).
+ * corex/mega-menu on the page (spec 137; US-NAV-04, FR-015, FR-016, FR-018; DECISIONS #691, #705).
  *
  * Without this script a panel opens while the pointer or the focus is inside its item (the block's
  * style). With it: a mouse resting on an item for about 150ms opens its panel and leaving closes it
- * a short delay later; a click or a tap opens and closes it, and a click on a panel the mouse opened
- * keeps it open; focus leaving the item, a click outside it and Escape close it, Escape returning
- * focus to the trigger; Down, Up, Home and End move among the panel's links and buttons; Left,
- * Right, Home and End move among the menu's items, mirrored in a right-to-left page. One panel is
- * open at a time. Inside WordPress's opened phone menu the item is left alone (spec 137 slice 4).
+ * a short delay later, unless keyboard focus is inside; a click or a tap opens and closes it, and a
+ * click on a panel the mouse opened keeps it open; focus leaving the item, a click outside it and
+ * Escape close it, Escape returning focus to the trigger; Down, Up, Home and End move among the
+ * panel's links and buttons; Left, Right, Home and End move among the menu's items, mirrored in a
+ * right-to-left page. A key pressed with Alt, Ctrl or Meta is the browser's. One panel is open at a
+ * time, and opening one closes the menu's open WordPress sub-menu. Inside WordPress's opened phone
+ * menu the item is left alone (spec 137 slice 4).
  *
  * Loaded only where the block is (its block.json `viewScript`). It reads no width (FR-003).
  * Exposed as `window.Corex.megaMenu = { init, destroy }` for its tests.
@@ -25,6 +27,8 @@
 	const PANEL_ITEMS = 'a[href], button:not([disabled])';
 	const TOP_LEVEL = ':scope > a[href], :scope > button';
 	const TYPING = 'input, textarea, select, [contenteditable]';
+	const OPEN_SUBMENU =
+		'.wp-block-navigation-submenu__toggle[aria-expanded="true"]';
 
 	let menus = [];
 	let listeners = [];
@@ -43,19 +47,54 @@
 		return !! menu.item.closest( PHONE_MENU );
 	}
 
+	function hasFocus( menu ) {
+		return menu.item.contains( menu.item.ownerDocument.activeElement );
+	}
+
+	/**
+	 * @param {KeyboardEvent} event A key press.
+	 * @return {boolean} Whether it is a shortcut the browser or the system owns.
+	 */
+	function isShortcut( event ) {
+		return event.altKey || event.ctrlKey || event.metaKey;
+	}
+
 	function stopTimer( menu ) {
 		window.clearTimeout( menu.timer );
 		menu.timer = null;
 	}
 
+	function closeOthers( menu ) {
+		menus.forEach( function ( other ) {
+			if ( other !== menu && isOpen( other ) ) {
+				setOpen( other, false );
+			}
+		} );
+	}
+
+	/**
+	 * Closes the open WordPress sub-menus of the menu the item is in, through their own toggles, so
+	 * WordPress's script keeps its state.
+	 *
+	 * @param {Object} menu The mega menu item.
+	 */
+	function closeSubmenus( menu ) {
+		const navigation = menu.item.closest( '.wp-block-navigation' );
+		if ( ! navigation ) {
+			return;
+		}
+		navigation
+			.querySelectorAll( OPEN_SUBMENU )
+			.forEach( function ( toggle ) {
+				toggle.click();
+			} );
+	}
+
 	function setOpen( menu, open ) {
 		stopTimer( menu );
 		if ( open ) {
-			menus.forEach( function ( other ) {
-				if ( other !== menu && isOpen( other ) ) {
-					setOpen( other, false );
-				}
-			} );
+			closeOthers( menu );
+			closeSubmenus( menu );
 		} else {
 			menu.pinned = false;
 		}
@@ -108,23 +147,17 @@
 	 * @return {number} The index, or -1.
 	 */
 	function moveTo( name, at, count, next, previous, wrap ) {
-		let to = -1;
-		if ( name === next ) {
-			to = at + 1;
-		} else if ( name === previous ) {
-			to = at - 1;
-		} else if ( name === 'Home' ) {
-			to = 0;
-		} else if ( name === 'End' ) {
-			to = count - 1;
-		} else {
+		const steps = { Home: 0, End: count - 1 };
+		steps[ next ] = at + 1;
+		steps[ previous ] = at - 1;
+		if ( ! ( name in steps ) ) {
 			return -1;
 		}
 		if ( wrap ) {
-			return ( to + count ) % count;
+			return ( steps[ name ] + count ) % count;
 		}
 
-		return Math.max( 0, Math.min( count - 1, to ) );
+		return Math.max( 0, Math.min( count - 1, steps[ name ] ) );
 	}
 
 	function focusPanelItem( menu, index ) {
@@ -163,10 +196,11 @@
 		if ( event.pointerType !== 'mouse' || menu.pinned ) {
 			return;
 		}
-		if ( isOpen( menu ) ) {
-			setOpenLater( menu, false, CLOSE_DELAY );
-		} else {
+		if ( ! isOpen( menu ) ) {
 			stopTimer( menu );
+		} else if ( ! hasFocus( menu ) ) {
+			// Keyboard focus inside keeps it open: closing would drop the focus on the page.
+			setOpenLater( menu, false, CLOSE_DELAY );
 		}
 	}
 
@@ -177,38 +211,32 @@
 		}
 	}
 
-	function onItemKeydown( menu, event ) {
-		if ( event.defaultPrevented || inPhoneMenu( menu ) ) {
+	function onEscape( menu, event ) {
+		if ( isOpen( menu ) ) {
+			event.preventDefault();
+			setOpen( menu, false );
+			menu.trigger.focus();
+		}
+	}
+
+	function onTriggerKey( menu, event ) {
+		if ( event.key !== 'ArrowDown' && event.key !== 'ArrowUp' ) {
 			return;
 		}
-		const target = event.target;
+		event.preventDefault();
+		setOpen( menu, true );
+		menu.pinned = true;
+		focusPanelItem( menu, event.key === 'ArrowDown' ? 0 : -1 );
+	}
 
-		if ( event.key === 'Escape' ) {
-			if ( isOpen( menu ) ) {
-				event.preventDefault();
-				setOpen( menu, false );
-				menu.trigger.focus();
-			}
-			return;
-		}
-
-		if ( target === menu.trigger ) {
-			if ( event.key === 'ArrowDown' || event.key === 'ArrowUp' ) {
-				event.preventDefault();
-				setOpen( menu, true );
-				menu.pinned = true;
-				focusPanelItem( menu, event.key === 'ArrowDown' ? 0 : -1 );
-			}
-			return;
-		}
-
-		if ( ! menu.panel.contains( target ) || target.matches( TYPING ) ) {
+	function onPanelKey( menu, event ) {
+		if ( event.target.matches( TYPING ) ) {
 			return;
 		}
 		const items = panelItems( menu );
 		const to = moveTo(
 			event.key,
-			items.indexOf( target ),
+			items.indexOf( event.target ),
 			items.length,
 			'ArrowDown',
 			'ArrowUp',
@@ -220,8 +248,29 @@
 		}
 	}
 
+	function onItemKeydown( menu, event ) {
+		if (
+			event.defaultPrevented ||
+			isShortcut( event ) ||
+			inPhoneMenu( menu )
+		) {
+			return;
+		}
+		if ( event.key === 'Escape' ) {
+			onEscape( menu, event );
+		} else if ( event.target === menu.trigger ) {
+			onTriggerKey( menu, event );
+		} else if ( menu.panel.contains( event.target ) ) {
+			onPanelKey( menu, event );
+		}
+	}
+
 	function onListKeydown( list, event ) {
-		if ( event.defaultPrevented || list.closest( PHONE_MENU ) ) {
+		if (
+			event.defaultPrevented ||
+			isShortcut( event ) ||
+			list.closest( PHONE_MENU )
+		) {
 			return;
 		}
 		const items = topLevelItems( list );
@@ -262,59 +311,73 @@
 			: null;
 	}
 
+	function bindMenu( menu ) {
+		menus.push( menu );
+		setOpen( menu, false );
+		menu.item.setAttribute( 'data-corex-mega-menu', 'ready' );
+
+		listen( menu.trigger, 'click', function () {
+			onTriggerClick( menu );
+		} );
+		listen( menu.item, 'pointerenter', function ( event ) {
+			onPointerEnter( menu, event );
+		} );
+		listen( menu.item, 'pointerleave', function ( event ) {
+			onPointerLeave( menu, event );
+		} );
+		listen( menu.item, 'focusout', function ( event ) {
+			onFocusOut( menu, event );
+		} );
+		listen( menu.item, 'keydown', function ( event ) {
+			onItemKeydown( menu, event );
+		} );
+	}
+
+	function bindList( list ) {
+		listen( list, 'keydown', function ( event ) {
+			onListKeydown( list, event );
+		} );
+	}
+
+	function bindDocument() {
+		listen( document, 'click', onDocumentClick );
+		listen(
+			document,
+			'pointerdown',
+			function ( event ) {
+				pressed = event.target;
+			},
+			true
+		);
+		listen( document, 'pointerup', function () {
+			window.setTimeout( function () {
+				pressed = null;
+			}, 0 );
+		} );
+	}
+
 	function init( root ) {
-		const scope = root || document;
+		const found = Array.prototype.slice
+			.call(
+				( root || document ).querySelectorAll(
+					'[data-corex-mega-menu]'
+				)
+			)
+			.map( menuFor )
+			.filter( Boolean );
 		const lists = [];
 
-		Array.prototype.slice
-			.call( scope.querySelectorAll( '[data-corex-mega-menu]' ) )
-			.map( menuFor )
-			.filter( Boolean )
-			.forEach( function ( menu ) {
-				menus.push( menu );
-				setOpen( menu, false );
-				menu.item.setAttribute( 'data-corex-mega-menu', 'ready' );
+		found.forEach( function ( menu ) {
+			bindMenu( menu );
+			const list = menu.item.parentElement;
+			if ( list && lists.indexOf( list ) < 0 ) {
+				lists.push( list );
+				bindList( list );
+			}
+		} );
 
-				listen( menu.trigger, 'click', function () {
-					onTriggerClick( menu );
-				} );
-				listen( menu.item, 'pointerenter', function ( event ) {
-					onPointerEnter( menu, event );
-				} );
-				listen( menu.item, 'pointerleave', function ( event ) {
-					onPointerLeave( menu, event );
-				} );
-				listen( menu.item, 'focusout', function ( event ) {
-					onFocusOut( menu, event );
-				} );
-				listen( menu.item, 'keydown', function ( event ) {
-					onItemKeydown( menu, event );
-				} );
-
-				const list = menu.item.parentElement;
-				if ( list && lists.indexOf( list ) < 0 ) {
-					lists.push( list );
-					listen( list, 'keydown', function ( event ) {
-						onListKeydown( list, event );
-					} );
-				}
-			} );
-
-		if ( menus.length ) {
-			listen( document, 'click', onDocumentClick );
-			listen(
-				document,
-				'pointerdown',
-				function ( event ) {
-					pressed = event.target;
-				},
-				true
-			);
-			listen( document, 'pointerup', function () {
-				window.setTimeout( function () {
-					pressed = null;
-				}, 0 );
-			} );
+		if ( found.length ) {
+			bindDocument();
 		}
 	}
 

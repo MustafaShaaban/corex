@@ -1,0 +1,9 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/theme.json",
+    "version": 3,
+    "templateParts": [
+        { "name": "header", "title": "Header", "area": "header" },
+        { "name": "footer", "title": "Footer", "area": "footer" },
+        { "name": "e2e-child-panel", "title": "Child panel", "area": "mega-menu" }
+    ]
+}

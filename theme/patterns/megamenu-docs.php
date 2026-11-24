@@ -5,6 +5,7 @@
  * Slug: corex/megamenu-docs
  * Categories: corex
  * Block Types: core/template-part/mega-menu
+ * Inserter: no
  * Description: The content of a mega menu panel: resource links in three groups. To use it, turn on the CoreX UI add-on, add a Mega menu item to a Navigation block, and in the item's settings, under New panel, choose this pattern and select Create panel.
  *
  * A panel's content only (spec 137, FR-019): the panel is a template part of the

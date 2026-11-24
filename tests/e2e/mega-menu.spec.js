@@ -1,6 +1,6 @@
 /**
  * Corex E2E: the mega menu item, as a visitor and an editor meet it (spec 137 slice 3; US-NAV-02 but
- * its phone criterion, US-NAV-04; FR-009 to FR-019; SC-002, SC-007; DECISIONS #691).
+ * its phone criterion, US-NAV-04; FR-009 to FR-019; SC-002, SC-007; DECISIONS #691, #705).
  *
  * A CoreX header holding a menu of six items, three of them mega items, each with its own panel, a
  * template part of the `mega-menu` area made from one of the panel patterns. Read in the browser:
@@ -10,12 +10,15 @@
  * the script. In the editor: the Navigation block accepts the item, and a new panel is made from a
  * panel pattern as the patterns' descriptions say. And SC-007: a header saved from
  * `corex/header-saas` at v0.48.1 (`fixtures/header-saas-v0.48.1.html`) still opens its panel and
- * its search.
+ * its search. A child theme ships a panel as a file (`fixtures/themes/corex-e2e-panel-child`, drawn
+ * for a request by `corex-e2e-child-theme.php`), and with the CoreX UI add-on off for a request
+ * (`corex-e2e-addon-off.php`) nothing of the item is drawn, loaded or offered in the editor.
  *
  * Everything is made through the REST API under a mark of this run and removed after it.
  *
  * ENVIRONMENT-GATED: needs the site at COREX_BASE_URL with corex-ui on, the CoreX theme active, the
- * `corex-e2e-arabic.php` fixture in its mu-plugins and `npx playwright install`.
+ * `corex-e2e-arabic.php`, `corex-e2e-child-theme.php` and `corex-e2e-addon-off.php` fixtures in its
+ * mu-plugins and `npx playwright install`.
  */
 const fs = require( 'node:fs' );
 const path = require( 'node:path' );
@@ -40,6 +43,11 @@ const OPEN_DELAY = 150;
 const made = { parts: [], navigation: null, pages: [] };
 let headerPath = null;
 let savedSaasPath = null;
+let childPanelPath = null;
+
+/** The child of the CoreX theme that ships a panel as a file, and that panel's slug. */
+const PANEL_CHILD = 'corex-e2e-panel-child';
+const CHILD_PANEL = 'e2e-child-panel';
 
 async function adminSession( browser ) {
 	const context = await browser.newContext( { storageState: STORAGE_STATE } );
@@ -160,9 +168,21 @@ test.beforeAll( async ( { browser } ) => {
 			'utf8'
 		),
 	} );
-	made.pages.push( headerPage.id, savedPage.id );
+	const childPage = await rest( session, 'POST', '/wp/v2/pages', {
+		title: `${ MARK } child panel`,
+		status: 'publish',
+		content: headerMarkup(
+			`<!-- wp:corex/mega-menu ${ JSON.stringify( {
+				label: 'Child',
+				panel: CHILD_PANEL,
+			} ) } /-->` +
+				'<!-- wp:navigation-link {"label":"Work","url":"/work/","kind":"custom"} /-->'
+		),
+	} );
+	made.pages.push( headerPage.id, savedPage.id, childPage.id );
 	headerPath = new URL( headerPage.link ).pathname;
 	savedSaasPath = new URL( savedPage.link ).pathname;
+	childPanelPath = new URL( childPage.link ).pathname;
 	await session.context.close();
 } );
 
@@ -439,6 +459,13 @@ for ( const width of [ 782, 1280 ] ) {
 							panelTop: panel.getBoundingClientRect().top,
 							card: card.toJSON(),
 							inner: inner.toJSON(),
+							// Beside the card, at its middle: the page, not the panel's padding.
+							beside: panel.contains(
+								document.elementFromPoint(
+									Math.max( 1, card.left - 8 ),
+									card.top + card.height / 2
+								)
+							),
 							bullets: [
 								...panel.querySelectorAll( 'li' ),
 							].filter(
@@ -477,6 +504,10 @@ for ( const width of [ 782, 1280 ] ) {
 					`${ where }: opens under the bar, not over its padding`
 				).toBeGreaterThanOrEqual( read.header.bottom - 0.5 );
 				expect( read.bullets, `${ where }: no list bullets` ).toBe( 0 );
+				expect(
+					read.beside,
+					`${ where }: beside the card the pointer reaches the page, not the panel`
+				).toBe( false );
 				expect(
 					read.header.height,
 					`${ where }: the bar keeps its height`
@@ -587,8 +618,162 @@ test( 'SC-007: a header saved from corex/header-saas at v0.48.1 still opens its 
 	).toBeFocused();
 } );
 
+test( 'FR-010, Edge Cases: a child theme ships a panel as a file, declared in its theme.json in the mega-menu area', async ( {
+	page,
+	context,
+	baseURL,
+} ) => {
+	await page.setViewportSize( { width: 1280, height: 900 } );
+
+	// Under the CoreX theme there is no such part: the item is not drawn.
+	await page.goto( childPanelPath );
+	await expect( page.locator( `${ HEADER } .corex-mega-menu` ) ).toHaveCount(
+		0
+	);
+	await expect(
+		page.locator( `${ HEADER } .wp-block-navigation__container > li` )
+	).toHaveCount( 1 );
+
+	await context.addCookies( [
+		{ name: 'corex_e2e_child', value: PANEL_CHILD, url: baseURL },
+	] );
+	const response = await page.goto( childPanelPath );
+	expect( response.headers()[ 'x-corex-e2e-child' ] ).toBe( PANEL_CHILD );
+	const trigger = page
+		.locator( HEADER )
+		.getByRole( 'button', { name: 'Child', exact: true } );
+	await trigger.click();
+	await expect(
+		page
+			.locator( HEADER )
+			.getByRole( 'group', { name: 'Child', exact: true } )
+			.getByRole( 'link', {
+				name: 'A panel the child theme ships as a file',
+			} )
+	).toBeVisible();
+} );
+
+test( 'FR-010: a child that lists its panel in templateParts repeats the CoreX header and footer entries, or loses their areas', async ( {
+	browser,
+	baseURL,
+} ) => {
+	// WordPress merges a child's `templateParts` with its parent's by position: a list holding only
+	// the panel would take the place of the header's entry. The fixture repeats both, as the docs say.
+	const session = await adminSession( browser );
+	await session.context.addCookies( [
+		{ name: 'corex_e2e_child', value: PANEL_CHILD, url: baseURL },
+	] );
+	const areaOf = async ( area ) =>
+		(
+			await rest( session, 'GET', `/wp/v2/template-parts?area=${ area }` )
+		).map( ( part ) => part.id );
+
+	expect( await areaOf( 'header' ) ).toContain( `${ PANEL_CHILD }//header` );
+	expect( await areaOf( 'footer' ) ).toContain( `${ PANEL_CHILD }//footer` );
+	expect( await areaOf( 'mega-menu' ) ).toContain(
+		`${ PANEL_CHILD }//${ CHILD_PANEL }`
+	);
+	await session.context.close();
+} );
+
+test.describe( 'with the CoreX UI add-on off', () => {
+	test( 'US-NAV-02 criterion 6: a menu holding mega items shows its other links, and nothing of the item loads', async ( {
+		page,
+		context,
+		baseURL,
+	} ) => {
+		await context.addCookies( [
+			{ name: 'corex_e2e_addon_off', value: 'corex-ui', url: baseURL },
+		] );
+		await page.setViewportSize( { width: 1280, height: 900 } );
+		const response = await page.goto( headerPath );
+		expect( response.headers()[ 'x-corex-e2e-addon-off' ] ).toBe(
+			'corex-ui'
+		);
+		const html = await page.content();
+
+		await expect(
+			page.locator( `${ HEADER } .wp-block-navigation__container > li` )
+		).toHaveCount( LINKS.length );
+		await expect( page.locator( '.corex-mega-menu' ) ).toHaveCount( 0 );
+		expect( html ).not.toContain( 'mega-menu/view' );
+		expect( html ).not.toContain( 'corex-mega-menu-style' );
+	} );
+
+	test( 'US-NAV-02 criterion 6: the editor has no mega menu item and the Site Editor no panel area', async ( {
+		browser,
+		baseURL,
+	} ) => {
+		const session = await adminSession( browser );
+		await session.context.addCookies( [
+			{ name: 'corex_e2e_addon_off', value: 'corex-ui', url: baseURL },
+		] );
+		const themes = await rest(
+			session,
+			'GET',
+			'/wp/v2/themes?status=active&_fields=default_template_part_areas'
+		);
+		const areas = themes[ 0 ].default_template_part_areas.map(
+			( area ) => area.area
+		);
+
+		await session.page.goto( '/wp-admin/post-new.php?post_type=page' );
+		await session.page.waitForFunction(
+			() => window.wp?.blocks?.getBlockType?.( 'core/navigation' ),
+			null,
+			{ timeout: 45_000 }
+		);
+		const editor = await session.page.evaluate( () => ( {
+			item: !! window.wp.blocks.getBlockType( 'corex/mega-menu' ),
+			listed: window.wp.blocks
+				.getBlockType( 'core/navigation' )
+				.allowedBlocks.includes( 'corex/mega-menu' ),
+		} ) );
+		await session.context.close();
+
+		expect( areas ).toContain( 'header' );
+		expect( areas ).not.toContain( 'mega-menu' );
+		expect( editor ).toEqual( { item: false, listed: false } );
+	} );
+} );
+
+/**
+ * The ids of the theme's parts in the `mega-menu` area, saved ones and files alike.
+ *
+ * @param {import('@playwright/test').APIRequestContext} request A request context on the admin's session.
+ * @param {string}                                       nonce   The REST nonce.
+ * @return {Promise<Array<string>>} The ids.
+ */
+async function megaMenuPartIds( request, nonce ) {
+	const response = await request.get(
+		'/wp-json/wp/v2/template-parts?area=mega-menu&per_page=100',
+		{ headers: { 'X-WP-Nonce': nonce } }
+	);
+
+	return ( await response.json() ).map( ( part ) => part.id );
+}
+
 test.describe( 'in the editor', () => {
 	test.use( { storageState: STORAGE_STATE } );
+
+	/** The parts of the area before the test, so what it made is removed even if it fails early. */
+	let before = null;
+
+	test.afterEach( async ( { page } ) => {
+		if ( ! before ) {
+			return;
+		}
+		const nonce = await page.evaluate( () => window.wpApiSettings?.nonce );
+		for ( const id of await megaMenuPartIds( page.request, nonce ) ) {
+			if ( ! before.includes( id ) ) {
+				await page.request.delete(
+					`/wp-json/wp/v2/template-parts/${ id }?force=true`,
+					{ headers: { 'X-WP-Nonce': nonce } }
+				);
+			}
+		}
+		before = null;
+	} );
 
 	test( 'FR-009, FR-013, FR-019: the Navigation block accepts the item, and a panel pattern makes a new panel as its description says', async ( {
 		page,
@@ -603,8 +788,9 @@ test.describe( 'in the editor', () => {
 			{ timeout: 45_000 }
 		);
 		const nonce = await page.evaluate( () => window.wpApiSettings?.nonce );
+		before = await megaMenuPartIds( page.request, nonce );
 
-		// The panel patterns are valid blocks.
+		// The panel patterns are valid blocks, kept out of the inserter.
 		const patterns = await (
 			await page.request.get( '/wp-json/wp/v2/block-patterns/patterns', {
 				headers: { 'X-WP-Nonce': nonce },
@@ -632,6 +818,9 @@ test.describe( 'in the editor', () => {
 			panelPatterns.map( ( pattern ) => pattern.content )
 		);
 		expect( invalid ).toEqual( [] );
+		expect( panelPatterns.map( ( pattern ) => pattern.inserter ) ).toEqual(
+			[ false, false, false, false ]
+		);
 
 		// The menu made for this run, in a Navigation block, once its items have loaded.
 		const navigationClientId = await page.evaluate( ( navigationId ) => {
@@ -723,6 +912,19 @@ test.describe( 'in the editor', () => {
 		).toBeVisible();
 		// Closed while the item has a panel; the pattern's description says where to find it.
 		await page.getByRole( 'button', { name: 'New panel' } ).click();
+		// The item still offers them, though the inserter does not.
+		const offered = await page
+			.getByLabel( 'Start from' )
+			.locator( 'option' )
+			.evaluateAll( ( options ) =>
+				options.map( ( option ) => option.value ).filter( Boolean )
+			);
+		expect( offered.sort() ).toEqual( [
+			'corex/megamenu-docs',
+			'corex/megamenu-product',
+			'corex/megamenu-services',
+			'corex/megamenu-simple',
+		] );
 		await page
 			.getByLabel( 'Start from' )
 			.selectOption( 'corex/megamenu-simple' );
@@ -747,7 +949,6 @@ test.describe( 'in the editor', () => {
 			)
 		).json();
 		const part = parts.find( ( candidate ) => candidate.slug === slug );
-		made.parts.push( part.id );
 
 		expect( part.area ).toBe( 'mega-menu' );
 		expect( part.content.raw ).toContain( 'corex-megamenu--simple' );

@@ -17,13 +17,13 @@ use Corex\Tests\Support\CreatedPosts;
 use Corex\Ui\Blocks\MegaMenuArea;
 
 /** Saves a template part for the active theme in an area; its slug. */
-function megaMenuTestPart(string $slug, string $content, string $area = MegaMenuArea::AREA): string
+function megaMenuTestPart(string $slug, string $content, string $area = MegaMenuArea::AREA, string $status = 'publish'): string
 {
     $id = wp_insert_post([
         'post_type'    => 'wp_template_part',
         'post_name'    => $slug,
         'post_title'   => $slug,
-        'post_status'  => 'publish',
+        'post_status'  => $status,
         'post_content' => $content,
     ]);
     wp_set_post_terms($id, get_stylesheet(), 'wp_theme');
@@ -192,4 +192,39 @@ it('FR-015, FR-044: loads the item\'s script and style only where a menu holds a
 
     wp_dequeue_script($handle);
     wp_dequeue_style($type->style_handles[0]);
+});
+
+it('FR-012: an item whose panel is a draft, or draws an empty group, is not drawn, and no visitor sees a part message', function () {
+    $draft = megaMenuTestPart('e2e-mega-draft', megaMenuTestParagraph('draft'), MegaMenuArea::AREA, 'draft');
+    $empty = megaMenuTestPart('e2e-mega-empty', '<!-- wp:group {"layout":{"type":"constrained"}} --><div class="wp-block-group"></div><!-- /wp:group -->');
+    wp_set_current_user(0);
+
+    $html = do_blocks(megaMenuTestNavigation(
+        megaMenuTestItem('Draft', $draft),
+        megaMenuTestItem('Empty', $empty),
+        megaMenuTestLink('About'),
+    ));
+    $page = megaMenuTestRead($html);
+
+    expect($page->query('//li[contains(@class, "corex-mega-menu")]')->length)->toBe(0)
+        ->and($page->query('//nav//ul/li')->length)->toBe(1)
+        ->and($html)->not->toContain('Draft')
+        ->and($html)->not->toContain('Template part');
+});
+
+it('FR-011: draws an item of a menu stored as a wp_navigation post, as the Site Editor stores menus', function () {
+    $services = megaMenuTestPart('e2e-mega-ref', megaMenuTestParagraph('consulting'));
+    $menu = wp_insert_post([
+        'post_type'    => 'wp_navigation',
+        'post_title'   => 'e2e mega ref menu',
+        'post_status'  => 'publish',
+        'post_content' => megaMenuTestItem('Services', $services) . megaMenuTestLink('About'),
+    ]);
+
+    $page = megaMenuTestRead(do_blocks(sprintf('<!-- wp:navigation {"ref":%d,"overlayMenu":"never"} /-->', $menu)));
+    $button = $page->query('//nav//ul/li[contains(@class, "corex-mega-menu")]/button')->item(0);
+
+    expect($page->query('//nav//ul/li')->length)->toBe(2)
+        ->and($button)->not->toBeNull()
+        ->and(trim($page->query('//*[@id="' . $button?->getAttribute('aria-controls') . '"]')->item(0)?->textContent ?? ''))->toBe('consulting');
 });

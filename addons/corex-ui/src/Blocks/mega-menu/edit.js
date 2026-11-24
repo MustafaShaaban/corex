@@ -33,6 +33,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					onChange={ ( value ) => setAttributes( { label: value } ) }
 					placeholder={ __( 'Label', 'corex' ) }
 					allowedFormats={ [] }
+					disableLineBreaks
 					withoutInteractiveFormatting
 				/>
 				<svg

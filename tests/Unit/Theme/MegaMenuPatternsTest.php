@@ -75,6 +75,12 @@ it('FR-019: makes each one a panel for the mega-menu area, with no details discl
         ->and($pattern)->toMatch('/<!-- wp:group \{[^}]*"className":"corex-megamenu[ "]/');
 })->with(corexMegaVariants());
 
+it('FR-019: keeps each panel pattern out of the inserter, where it would land on a page as an unstyled block', function (string $variant) {
+    // The item's "Start from" reads every registered pattern (the REST route lists them all), so it
+    // still offers them; the browser test proves it.
+    expect(corexMegaHeader(corexMegaPattern($variant), 'Inserter'))->toBe('no');
+})->with(corexMegaVariants());
+
 it('FR-019, US-NAV-02 criterion 5: describes how to put the panel on a mega menu item, in the editor\'s own words', function (string $variant) {
     $description = corexMegaHeader(corexMegaPattern($variant), 'Description');
     $editor = corexMegaEditorWords();

@@ -38,6 +38,9 @@ function menuMarkup( { dir = 'ltr', phoneMenu = false } = {} ) {
 		'<li class="wp-block-navigation-item"><a class="wp-block-navigation-item__content first-link" href="/work">Work</a></li>' +
 		item( 'services', 'Services' ) +
 		item( 'products', 'Products' ) +
+		'<li class="wp-block-navigation-item has-child open-on-click wp-block-navigation-submenu">' +
+		'<button type="button" class="wp-block-navigation-item__content wp-block-navigation-submenu__toggle" aria-expanded="false">Company</button>' +
+		'<ul class="wp-block-navigation__submenu-container"><li><a href="/about">About</a></li></ul></li>' +
 		'<li class="wp-block-navigation-item"><a class="wp-block-navigation-item__content last-link" href="/blog">Blog</a></li>' +
 		'</ul>';
 	const container = phoneMenu
@@ -60,7 +63,24 @@ function setup( options ) {
 		field: document.querySelector( `.${ id }-field` ),
 	} );
 
-	return { services: part( 'services' ), products: part( 'products' ) };
+	// WordPress's own script opens and closes a sub-menu on a click of its toggle.
+	const submenu = document.querySelector(
+		'.wp-block-navigation-submenu__toggle'
+	);
+	submenu.addEventListener( 'click', () =>
+		submenu.setAttribute(
+			'aria-expanded',
+			submenu.getAttribute( 'aria-expanded' ) === 'true'
+				? 'false'
+				: 'true'
+		)
+	);
+
+	return {
+		services: part( 'services' ),
+		products: part( 'products' ),
+		submenu,
+	};
 }
 
 const isOpen = ( part ) =>
@@ -77,11 +97,12 @@ function pointer( element, type, pointerType = 'mouse' ) {
 	element.dispatchEvent( event );
 }
 
-function key( element, name ) {
+function key( element, name, modifiers = {} ) {
 	const event = new window.KeyboardEvent( 'keydown', {
 		key: name,
 		bubbles: true,
 		cancelable: true,
+		...modifiers,
 	} );
 	element.dispatchEvent( event );
 
@@ -387,5 +408,59 @@ describe( "FR-018: inside an opened phone menu the item is left to WordPress's m
 		expect( key( services.trigger, 'Escape' ).defaultPrevented ).toBe(
 			false
 		);
+	} );
+} );
+
+describe( 'review fixes: the mouse, browser shortcuts and WordPress sub-menus', () => {
+	test( 'the mouse leaving a panel it opened does not close it while keyboard focus is inside', () => {
+		const { services } = setup();
+		pointer( services.item, 'pointerenter' );
+		jest.advanceTimersByTime( 200 );
+		services.links[ 1 ].focus();
+
+		pointer( services.item, 'pointerleave' );
+		jest.advanceTimersByTime( 1000 );
+
+		expect( isOpen( services ) ).toBe( true );
+		expect( document.activeElement ).toBe( services.links[ 1 ] );
+	} );
+
+	test( 'a shortcut with Alt, Ctrl or Meta is left to the browser', () => {
+		const { services, products } = setup();
+
+		const back = key( services.trigger, 'ArrowLeft', { altKey: true } );
+		const open = key( services.trigger, 'ArrowDown', { metaKey: true } );
+		expect( back.defaultPrevented ).toBe( false );
+		expect( open.defaultPrevented ).toBe( false );
+		expect( isClosed( services ) ).toBe( true );
+
+		products.trigger.click();
+		products.links[ 0 ].focus();
+		const end = key( products.links[ 0 ], 'End', { ctrlKey: true } );
+		const next = key( products.trigger, 'ArrowRight', { metaKey: true } );
+		expect( end.defaultPrevented ).toBe( false );
+		expect( next.defaultPrevented ).toBe( false );
+		expect( document.activeElement ).toBe( products.links[ 0 ] );
+	} );
+
+	test( "opening a mega panel closes the menu's open WordPress sub-menu", () => {
+		const { services, submenu } = setup();
+		submenu.click();
+		expect( submenu.getAttribute( 'aria-expanded' ) ).toBe( 'true' );
+
+		services.trigger.click();
+
+		expect( isOpen( services ) ).toBe( true );
+		expect( submenu.getAttribute( 'aria-expanded' ) ).toBe( 'false' );
+	} );
+
+	test( 'opening a WordPress sub-menu closes the open mega panel', () => {
+		const { services, submenu } = setup();
+		services.trigger.click();
+
+		submenu.click();
+
+		expect( isClosed( services ) ).toBe( true );
+		expect( submenu.getAttribute( 'aria-expanded' ) ).toBe( 'true' );
 	} );
 } );
