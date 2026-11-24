@@ -63,12 +63,20 @@ file `corex-gap-programme-rules.md` (side-session notes of the Blackstone sessio
   own rows of the table below: the Slice, PR and State columns say what is on `main`, so this paragraph does not
   repeat them. The first slice landed on 2026-11-22 (spec 135 slice 1, G-001, #495, `819f0be1`). Nothing is
   tagged.
-- **Paused and resumed, 2026-11-23.** The owner paused the programme in the afternoon and resumed it the same
-  day at 4:30 PM Cairo time. Nothing merged during the pause; every branch was pushed and no worktree was left
-  mid-merge. Spec 135 resumes at slice 4 (the favicon, `main` only) and then slice 5 (G-007); spec 136 resumes
-  after slice 3 (#506); spec 137 has its spec and every drawing on `main` and takes the next building slot. The
-  waves 2 and 3 planning session is not started; its brief is `brief-waves-2-3-specs.md` in the coordinator's
-  notes folder (named under "Who coordinates").
+- **Paused by the owner, 2026-11-24, with no end date.** He paused the Blackstone v2 site, and the gap programme
+  with it, until he says to continue. No session builds, reviews, draws or merges until then; every branch is
+  pushed, every worktree is clean, and no programme pull request is open. Where each spec stands:
+  - Spec 135: done for wave 1 (slices 1 to 6 on `main`). G-055, the Azure site CI (slices 7 to 9 for `v0.49.0`,
+    10 for `v0.50.0`), is specified (#518) and waits for a building slot.
+  - Spec 136: slices 1, 2a, 3 and 4 on `main`. Slice 5 (the accordion holds blocks, G-004, DECISIONS #683) is built
+    and reviewed on `spec/136-slice-5-accordion` (`af70de56`); its UI review, the Codex review and its pull request
+    come next. Then 6a and 7. Slices 6b and 8 wait for the owner's answer on the drawn boards D-1 and D-2; slice 9
+    (the hero) builds with its slot, D-3a being approved.
+  - Spec 137: slices 1 and 2 on `main` (G-054, the language toggle, closed). Slice 3 (the mega menu item) is built
+    on `spec/137-slice-3-mega-menu` (`8c63c1d9`); its page-size check, a copy check by the owner, the UI review,
+    the Codex review and its pull request come next. Then slices 4, 5 and 6.
+  - Spec 149 is on `main` (#521). Its four boards (149-D1 to 149-D4) are not drawn; the design session and the
+    session that writes specs 150 and 153 are briefed and not started.
 - **G-048 joins wave 1 (spec 135 slice 6, after slice 5).** A child of the CoreX theme sees all of the parent's
   patterns and templates and cannot hide them. Correction to the gap as written: a child does not repeat the
   parent's custom templates unless it declares its own `customTemplates` list. The slice adds an opt-in setting
