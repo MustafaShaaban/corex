@@ -88,7 +88,9 @@ function parityTestParsedBlocks(mixed $blocks): array
 
 /**
  * Draws a fixture's block through WordPress: its `context` given to the block itself, and each child
- * block's markup wrapped in an element marked `data-corex-parity-child`, so the tree leaves it out.
+ * block's markup, when it drew any, wrapped in an element marked `data-corex-parity-child`, so the tree
+ * leaves it out. The tree reports a marked child whose parent element carries no class of the block,
+ * so a child printed outside the element that holds it fails.
  *
  * @param array<string,mixed> $block   the parsed block
  * @param array<string,mixed> $context the fixture's `context`
@@ -102,7 +104,8 @@ function parityTestRender(array $block, array $context): string
 
         return $parsed;
     };
-    $mark = static fn (string $html, array $parsed): string => ! empty($parsed['corexParityChild'])
+    // A child that drew nothing gets no mark: an empty marked element would hide nothing.
+    $mark = static fn (string $html, array $parsed): string => ! empty($parsed['corexParityChild']) && trim($html) !== ''
         ? '<div ' . ParityTree::CHILD_BLOCK . '>' . $html . '</div>'
         : $html;
     $give = static fn (array $current, array $parsed, ?WP_Block $parent): array => $parent === null
@@ -183,6 +186,40 @@ it('FR-012: draws the tree of its parity.json on the page', function (string $fi
         $markup,
     ]);
 
+    // The mark is the harness's alone: drawn without its filters, the block carries none.
+    $bare = render_block([
+        'blockName' => $name,
+        'attrs' => is_array($fixture['attributes'] ?? null) ? $fixture['attributes'] : [],
+        'innerBlocks' => $inner,
+        'innerHTML' => '',
+        'innerContent' => array_fill(0, count($inner), null),
+    ]);
+
+    // A child drawn outside an element of the block is reported in the page's errors.
     expect($page['errors'])->toBe([], $message)
-        ->and($page['tree'])->toBe($expected, $message);
+        ->and($page['tree'])->toBe($expected, $message)
+        ->and($bare)->not->toContain(ParityTree::CHILD_BLOCK, $name . ': prints the harness mark without the harness');
 })->with(fn (): array => parityTestFixtures());
+
+it('FR-012: the harness marks only a child block that drew something, and none outside the render', function () {
+    $item = static fn (string $question): array => [
+        'blockName' => 'corex/accordion-item',
+        'attrs' => ['question' => $question],
+        'innerBlocks' => [],
+        'innerHTML' => '',
+        'innerContent' => [],
+    ];
+    // An item with no question prints nothing: it gets no mark, which would leave an empty element.
+    $markup = parityTestRender([
+        'blockName' => 'corex/accordion',
+        'attrs' => [],
+        'innerBlocks' => [$item(''), $item('Kept')],
+        'innerHTML' => '',
+        'innerContent' => [null, null],
+    ], []);
+
+    expect(substr_count($markup, ParityTree::CHILD_BLOCK))->toBe(1)
+        ->and(ParityTree::fromMarkup($markup, 'corex-accordion')['errors'])->toBe([])
+        ->and(do_blocks('<!-- wp:corex/accordion --><!-- wp:corex/accordion-item {"question":"Q"} /--><!-- /wp:corex/accordion -->'))
+        ->not->toContain(ParityTree::CHILD_BLOCK);
+});

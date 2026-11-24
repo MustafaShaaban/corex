@@ -136,6 +136,8 @@ describe( 'FR-030: an accordion item', () => {
 		summary.props.onClick( event );
 		summary.props.onKeyUp( event );
 		expect( event.preventDefault ).toHaveBeenCalledTimes( 2 );
+		// Not a stop of its own for the keyboard: Tab goes to the question's text field.
+		expect( summary.props.tabIndex ).toBe( -1 );
 	} );
 
 	test( 'the answer holds any blocks and starts with a paragraph', () => {

@@ -51,17 +51,31 @@ final class AccordionItemMarkup
      */
     public function item(string $question, string $answerHtml, int $level = 0, string $name = ''): string
     {
-        $tag = $this->level($level) === 0 ? 'span' : 'h' . $this->level($level);
+        $level = $this->level($level);
+        $tag = $level === 0 ? 'span' : 'h' . $level;
         $html = '<details class="corex-accordion__item"' . ($name === '' ? '' : ' name="' . esc_attr($name) . '"') . '>'
             . '<summary class="corex-accordion__summary">'
             . '<' . $tag . ' class="corex-accordion__question">' . wp_kses_post($question) . '</' . $tag . '>'
             . self::CHEVRON
             . '</summary>';
 
-        if (trim($answerHtml) !== '') {
+        if (! $this->isEmpty($answerHtml)) {
             $html .= '<div class="corex-accordion__content">' . $answerHtml . '</div>';
         }
 
         return $html . '</details>';
+    }
+
+    /**
+     * Whether an answer says nothing: whitespace, or only paragraphs that hold nothing but spaces,
+     * no-break spaces and line breaks. An item starts with an empty paragraph in the editor, and one
+     * left empty is saved and drawn as `<p></p>`: that is no answer, and the item opens to nothing.
+     */
+    private function isEmpty(string $answerHtml): bool
+    {
+        $blank = '(?:\s|&nbsp;|&#160;|&#xa0;|\x{00A0}|<br\s*\/?>)*';
+        $rest = preg_replace('~<p\b[^>]*>' . $blank . '</p>~iu', '', $answerHtml);
+
+        return $rest !== null && preg_match('~^' . $blank . '$~iu', $rest) === 1;
     }
 }

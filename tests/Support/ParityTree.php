@@ -12,7 +12,8 @@
  * `data-corex-parity-child` is what a child block drew, and is skipped with everything inside it:
  * where a block holds blocks, the element that holds them is compared, and what the child blocks
  * draw is compared through their own fixtures (`tests/Integration/Blocks/ParityTest.php` puts the
- * mark around each child block it renders).
+ * mark around each child block it renders). A marked child whose parent element carries no class of
+ * the block is reported: a child printed outside its holder.
  *
  * The JavaScript twin is `packages/build-tools/parity/tree.js`; the two must compute the same tree.
  *
@@ -201,6 +202,17 @@ final class ParityTree
         }
 
         if ($element->hasAttribute(self::CHILD_BLOCK)) {
+            // The element that holds a child block is the block's own: one drawn outside it fails.
+            $parent = $element->parentNode;
+            if (! $parent instanceof DOMElement || self::blockClassesOf($parent, $prefix) === []) {
+                $errors[] = sprintf(
+                    'a child block (%s) is drawn in a <%s> that carries no class of the block %s',
+                    self::CHILD_BLOCK,
+                    $parent instanceof DOMElement ? strtolower($parent->tagName) : 'document',
+                    $prefix,
+                );
+            }
+
             return [];
         }
 

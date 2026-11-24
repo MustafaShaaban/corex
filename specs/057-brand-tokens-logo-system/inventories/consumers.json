@@ -2493,7 +2493,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/accordion/style.scss",
-      "selector_or_context": "lines 59: transition: transform var(--wp--custom--motion--duration--base) var(--wp--custom--motion--easing--standard);",
+      "selector_or_context": "lines 60: transition: transform var(--wp--custom--motion--duration--base) var(--wp--custom--motion--easing--standard);",
       "property": "--wp--custom--motion--duration--base",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -2503,7 +2503,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/accordion/style.scss",
-      "selector_or_context": "lines 59: transition: transform var(--wp--custom--motion--duration--base) var(--wp--custom--motion--easing--standard);",
+      "selector_or_context": "lines 60: transition: transform var(--wp--custom--motion--duration--base) var(--wp--custom--motion--easing--standard);",
       "property": "--wp--custom--motion--easing--standard",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -2523,7 +2523,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/accordion/style.scss",
-      "selector_or_context": "lines 33, 70: color: var(--wp--preset--color--ink);",
+      "selector_or_context": "lines 33, 71: color: var(--wp--preset--color--ink);",
       "property": "--wp--preset--color--ink",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -2553,7 +2553,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/accordion/style.scss",
-      "selector_or_context": "lines 69: font-size: var(--wp--preset--font-size--sm);",
+      "selector_or_context": "lines 70: font-size: var(--wp--preset--font-size--sm);",
       "property": "--wp--preset--font-size--sm",
       "owner": "ui-addon",
       "surface": "front-end",
@@ -2583,7 +2583,7 @@
     },
     {
       "path": "addons/corex-ui/src/Blocks/accordion/style.scss",
-      "selector_or_context": "lines 15, 31, 67, 68: gap: var(--wp--preset--spacing--30); | padding: var(--wp--preset--spacing--30); | padding-block-end: var(--wp--preset--spacing--30);",
+      "selector_or_context": "lines 15, 31, 68, 69: gap: var(--wp--preset--spacing--30); | padding: var(--wp--preset--spacing--30); | padding-block-end: var(--wp--preset--spacing--30);",
       "property": "--wp--preset--spacing--30",
       "owner": "ui-addon",
       "surface": "front-end",

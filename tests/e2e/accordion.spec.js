@@ -5,7 +5,8 @@
  * A published page holds two accordions: the first with "Open one at a time" on and its questions
  * as headings 3, its first answer holding a paragraph, a list, an image and a button; the second
  * with the defaults. A second page holds an accordion saved before this slice (its questions and
- * answers in `items`, a self-closing block). A draft holds the same old accordion for the editor.
+ * answers in `items`, a self-closing block). One draft holds the same old accordion for the editor,
+ * another the first page's two accordions.
  *
  * - TC-BLK-02-01: the list, the image and the button render inside the answer, and show when it opens;
  * - TC-BLK-02-02 and 03: with the setting on, opening a question closes the open one, with scripts on
@@ -13,14 +14,17 @@
  * - TC-BLK-02-04: the chevron points forward closed and down open, the browser's triangle is not
  *   drawn, and in Arabic, right to left, the closed chevron points the other way and sits at the
  *   other end; under reduced motion it turns without a transition;
- * - TC-BLK-02-05: with scripts off, Tab reaches a question, Enter opens it and Space closes it, and
- *   Chromium's own accessibility tree (read over CDP, not Playwright's computed one) reports the
- *   question expanded, then collapsed, with a heading of level 3 inside it (FR-032);
+ * - TC-BLK-02-05: with scripts off and on, Tab reaches a question, Enter opens it and Space closes
+ *   it, and Chromium's own accessibility tree (read over CDP, not Playwright's computed one) reports
+ *   the question expanded, then collapsed, with a heading of level 3 inside it (FR-032); an item of
+ *   the one-at-a-time accordion is a `DisclosureTriangleGrouped`, one of the default a
+ *   `DisclosureTriangle`;
  * - TC-BLK-02-06: the old accordion keeps its questions and answers on the page; in the editor it
- *   is migrated to accordion items holding paragraphs, with no warning, and a question is typed in
- *   place.
+ *   is migrated to accordion items holding paragraphs, with no warning, a question is typed in place,
+ *   and what the editor would save holds accordion items and no `items`;
+ * - FR-030: the new shape opens in the editor with no warning and unchanged.
  *
- * The spec makes the pages and the draft and removes them. ENVIRONMENT-GATED: needs the site at
+ * The spec makes the pages and the drafts and removes them. ENVIRONMENT-GATED: needs the site at
  * COREX_BASE_URL.
  */
 const { test, expect } = require( '@playwright/test' );
@@ -89,7 +93,7 @@ const OLD = `<!-- wp:corex/accordion ${ JSON.stringify( {
 	],
 } ) } /-->`;
 
-const made = { page: null, old: null, draft: null };
+const made = { page: null, old: null, draft: null, saved: null };
 
 async function adminSession( browser ) {
 	// The test beside it may run with scripts off; this session reads the REST nonce, so it keeps them.
@@ -131,6 +135,11 @@ test.beforeAll( async ( { browser } ) => {
 		status: 'draft',
 		content: OLD,
 	} );
+	made.saved = await create( 'posts', {
+		title: 'cx136 new accordion in the editor',
+		status: 'draft',
+		content: PAGE,
+	} );
 	await context.close();
 } );
 
@@ -140,6 +149,7 @@ test.afterAll( async ( { browser } ) => {
 		[ 'pages', made.page ],
 		[ 'pages', made.old ],
 		[ 'posts', made.draft ],
+		[ 'posts', made.saved ],
 	] ) {
 		if ( entry?.id ) {
 			await page.request.delete(
@@ -360,84 +370,99 @@ test( 'FR-032: under reduced motion the chevron turns without a transition', asy
 	await context.close();
 } );
 
-test( 'TC-BLK-02-05, FR-032: scripts off, the keyboard opens and closes a question, a heading the tree reports expanded then collapsed', async ( {
-	browser,
-	browserName,
-} ) => {
-	test.skip(
-		browserName !== 'chromium',
-		"Chromium's own accessibility tree is read over CDP"
-	);
-	const { context, page } = await visit( browser, {
-		url: made.page.link,
-		scripts: false,
-	} );
-	const first = page.locator( '.cx136-one .corex-accordion__item' ).first();
-	const summary = first.locator( 'summary' );
+for ( const scripts of [ false, true ] ) {
+	const state = scripts ? 'scripts on' : 'scripts off';
 
-	// Tab, from the top of the page, until the first question has the focus.
-	let presses = 0;
-	while (
-		( await page
-			.locator( '.cx136-one summary.corex-accordion__summary:focus' )
-			.count() ) === 0 &&
-		presses < 120
-	) {
-		await page.keyboard.press( 'Tab' );
-		presses++;
-	}
-	await expect( summary ).toBeFocused();
-
-	/**
-	 * The question in Chromium's tree: the control the summary is, and the heading inside it.
-	 *
-	 * @return {Promise<{control: Object, heading: Object|undefined}>} The two nodes.
-	 */
-	const question = async () => {
-		const nodes = await accessibilityTree( page );
-		const byId = new Map( nodes.map( ( node ) => [ node.nodeId, node ] ) );
-		const heading = nodes.find(
-			( node ) =>
-				! node.ignored &&
-				node.role?.value === 'heading' &&
-				node.name?.value === 'How do I start?'
+	test( `TC-BLK-02-05, FR-032: ${ state }, the keyboard opens and closes a question, a heading the tree reports expanded then collapsed`, async ( {
+		browser,
+		browserName,
+	} ) => {
+		test.skip(
+			browserName !== 'chromium',
+			"Chromium's own accessibility tree is read over CDP"
 		);
-		// The summary's role: `DisclosureTriangle`, or `DisclosureTriangleGrouped` for an item of
-		// a named group (one open at a time), as this accordion's are.
-		let control = heading;
+		const { context, page } = await visit( browser, {
+			url: made.page.link,
+			scripts,
+		} );
+		const first = page
+			.locator( '.cx136-one .corex-accordion__item' )
+			.first();
+		const summary = first.locator( 'summary' );
+
+		// Tab, from the top of the page, until the first question has the focus.
+		let presses = 0;
 		while (
-			control &&
-			! /^DisclosureTriangle/.test( control.role?.value ?? '' )
+			( await page
+				.locator( '.cx136-one summary.corex-accordion__summary:focus' )
+				.count() ) === 0 &&
+			presses < 120
 		) {
-			control = byId.get( control.parentId );
+			await page.keyboard.press( 'Tab' );
+			presses++;
 		}
+		await expect( summary ).toBeFocused();
 
-		return { control, heading };
-	};
+		/**
+		 * The first question in Chromium's tree: the control its summary is and the heading inside
+		 * it; and the control of the default accordion's first question.
+		 *
+		 * @return {Promise<{control: Object, heading: Object, plain: Object}>} The three nodes.
+		 */
+		const question = async () => {
+			const nodes = await accessibilityTree( page );
+			const byId = new Map(
+				nodes.map( ( node ) => [ node.nodeId, node ] )
+			);
+			const isControl = ( node ) =>
+				/^DisclosureTriangle/.test( node?.role?.value ?? '' );
+			const heading = nodes.find(
+				( node ) =>
+					! node.ignored &&
+					node.role?.value === 'heading' &&
+					node.name?.value === 'How do I start?'
+			);
+			let control = heading;
+			while ( control && ! isControl( control ) ) {
+				control = byId.get( control.parentId );
+			}
+			const plain = nodes.find(
+				( node ) =>
+					! node.ignored &&
+					isControl( node ) &&
+					node.name?.value === 'First of many?'
+			);
 
-	const closed = await question();
-	expect( closed.heading, 'a heading inside the question' ).toBeDefined();
-	expect( propertyOf( closed.heading, 'level' ) ).toBe( 3 );
-	expect(
-		closed.control,
-		'the heading sits in the question control'
-	).toBeDefined();
-	expect( closed.control.name?.value ).toBe( 'How do I start?' );
-	expect( propertyOf( closed.control, 'expanded' ) ).toBe( false );
+			return { control, heading, plain };
+		};
 
-	await page.keyboard.press( 'Enter' );
-	await expect( first ).toHaveAttribute( 'open', '' );
-	expect( propertyOf( ( await question() ).control, 'expanded' ) ).toBe(
-		true
-	);
+		const closed = await question();
+		expect( closed.heading, 'a heading inside the question' ).toBeDefined();
+		expect( propertyOf( closed.heading, 'level' ) ).toBe( 3 );
+		expect(
+			closed.control,
+			'the heading sits in the question control'
+		).toBeDefined();
+		// An item of the one-at-a-time accordion is one of a group; the default accordion's is not.
+		expect( closed.control.role.value ).toBe( 'DisclosureTriangleGrouped' );
+		expect( closed.plain?.role.value ).toBe( 'DisclosureTriangle' );
+		expect( closed.control.name?.value ).toBe( 'How do I start?' );
+		expect( propertyOf( closed.control, 'expanded' ) ).toBe( false );
 
-	await page.keyboard.press( 'Space' );
-	await expect( first ).not.toHaveAttribute( 'open', '' );
-	expect( propertyOf( ( await question() ).control, 'expanded' ) ).toBe(
-		false
-	);
-	await context.close();
-} );
+		await page.keyboard.press( 'Enter' );
+		await expect( first ).toHaveAttribute( 'open', '' );
+		expect( propertyOf( ( await question() ).control, 'expanded' ) ).toBe(
+			true
+		);
+
+		await page.keyboard.press( 'Space' );
+		await expect( first ).not.toHaveAttribute( 'open', '' );
+		expect( propertyOf( ( await question() ).control, 'expanded' ) ).toBe(
+			false
+		);
+		await context.close();
+	} );
+}
 
 test( 'TC-BLK-02-06: an accordion saved before the change keeps its questions and answers', async ( {
 	browser,
@@ -522,4 +547,38 @@ test( 'FR-039: opened in the editor, an old accordion becomes accordion items, a
 	await expect(
 		first.locator( '.corex-accordion__content p.wp-block-paragraph' )
 	).toHaveText( 'A WordPress framework.' );
+
+	// What the editor would save: inner blocks, and no old items left.
+	const saved = await page.evaluate( () =>
+		window.wp.data.select( 'core/editor' ).getEditedPostContent()
+	);
+	expect( saved ).not.toContain( '"items"' );
+	expect( saved.match( /<!-- wp:corex\/accordion-item /g ) ).toHaveLength(
+		2
+	);
+} );
+
+test( 'FR-030: an accordion saved in the new shape opens in the editor with no warning', async ( {
+	page,
+} ) => {
+	await page.setViewportSize( DESKTOP );
+	await page.goto( `/wp-admin/post.php?post=${ made.saved.id }&action=edit` );
+	const canvas = page.frameLocator( 'iframe[name="editor-canvas"]' );
+	await expect( canvas.locator( '.cx136-one' ) ).toBeVisible( {
+		timeout: 45_000,
+	} );
+
+	await expect(
+		canvas.locator( '.cx136-one .corex-accordion__item' )
+	).toHaveCount( 3 );
+	await expect(
+		canvas.locator( '.cx136-one h3.corex-accordion__question' ).first()
+	).toHaveText( 'How do I start?' );
+	await expect( canvas.locator( '.block-editor-warning' ) ).toHaveCount( 0 );
+	// Opening it changed nothing: the content is what was saved.
+	expect(
+		await page.evaluate( () =>
+			window.wp.data.select( 'core/editor' ).isEditedPostDirty()
+		)
+	).toBe( false );
 } );

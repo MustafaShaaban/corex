@@ -118,7 +118,7 @@ category — all server-rendered, token-only, and RTL-correct:
 | `corex/stat` | A single statistic — value, label, optional description |
 | `corex/testimonial` | A quote with attribution (`<figure>`/`<blockquote>`/`<figcaption>`) |
 | `corex/pricing` | A pricing card — plan, price, features, optional CTA |
-| `corex/accordion` | Accessible disclosures from a list — native `<details>`, no JavaScript |
+| `corex/accordion` | Questions that open to show their answers, each an accordion item whose answer holds any blocks; native `<details>`, no JavaScript |
 | `corex/hero` | A page hero — eyebrow, heading, subheadline, button, optional background image |
 | `corex/cta` | A call-to-action banner — heading, supporting line, button |
 | `corex/team` | A responsive grid of team members — photo, name, role, bio |
@@ -131,14 +131,25 @@ inside a columns/grid container.)
 
 ## Inline editing (modern, in-canvas)
 
-The component blocks (`stat`/`testimonial`/`pricing`/`accordion`/`hero`/`cta`/`team`/`gallery`/
+The component blocks (`stat`/`testimonial`/`pricing`/`hero`/`cta`/`team`/`gallery`/
 `tabs`) are edited **inline on the canvas** — you type the heading, quote, price, or panel text
 directly into the block like a modern page builder (not only in the right sidebar). They stay
 **dynamic**: the text lives in block attributes, `save` returns `null`, and the PHP renderer
 produces the markup from those attributes (so the editor and the front end share one source of
 truth). Rich text (bold, italic, links) is preserved safely with `wp_kses_post`. Repeatable lists
-— pricing features, accordion panels, team members, gallery images, tabs — are added/removed as
-inline rows. Image blocks (`hero`/`team`/`gallery`) pick from the **media library** (no pasted
+(pricing features, team members, gallery images, tabs) are added and removed as inline rows.
+
+The accordion holds blocks instead (spec 136). Each question is a **Corex Accordion item** inside
+it: you type the question where it stands, and its answer holds any blocks, such as paragraphs,
+lists, images and buttons. Add an item with the accordion's appender, and move or remove one as any
+block. In the editor every item is drawn open, so its answer stays in reach, and pressing or typing
+in a question does not close it. The accordion's settings, in the side panel: **Open one at a time**
+(off by default), which gives the items one `name`, so opening a question closes the open one, with
+or without scripts; and **Question heading level** (none by default, or 2 to 6), which makes each
+question a heading of that level for the page outline. A question with no answer, or only an empty
+paragraph, opens to nothing on the page, and an item with no question is not printed. An accordion
+saved before it held blocks still prints its questions and answers, and becomes accordion items the
+first time it is opened in the editor. Image blocks (`hero`/`team`/`gallery`) pick from the **media library** (no pasted
 URLs), storing `{id, url, alt}` and rendering real `<img>` with alt text + lazy loading. `tabs`
 renders an accessible tabbed widget with **zero view JavaScript** (a CSS-only radio/label pattern),
 so it works even with scripts disabled.

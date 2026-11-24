@@ -131,8 +131,9 @@ function corexAssets() {
 		bytes: element.textContent.length,
 	} ) );
 
+	// Any case: corex-ui builds its blocks under `build/Blocks/` on some installs.
 	const blockOf = ( name ) =>
-		( name.match( /\/build\/blocks\/([a-z0-9-]+)\// ) ||
+		( name.match( /\/build\/blocks\/([a-z0-9-]+)\//i ) ||
 			name.match(
 				/^#corex-([a-z0-9-]+?)-(?:view-)?(?:style|script)(?:-inline)?-(?:css|js)$/
 			) ||

@@ -104,6 +104,14 @@ it('FR-030: an item with no question is skipped on the page, and an accordion of
         ->and(do_blocks(accordionTestBlock(accordionTestItem('', accordionTestParagraph('A')))))->toBe('');
 });
 
+it('FR-030: a question saved with the empty paragraph its item starts with has no answer on the page', function () {
+    // What the editor saves for an item whose starting paragraph was left empty.
+    $html = do_blocks(accordionTestBlock(accordionTestItem('No answer yet?', '<!-- wp:paragraph -->' . "\n" . '<p></p>' . "\n" . '<!-- /wp:paragraph -->')));
+
+    expect(accordionTestItems($html))->toHaveCount(1)
+        ->and($html)->not->toContain('corex-accordion__content');
+});
+
 it('FR-031, TC-BLK-02-03: with "Open one at a time" off, the default, no item has a name, so several stay open', function () {
     $items = accordionTestItems(do_blocks(accordionTestBlock(accordionTestItem('Q1', '') . accordionTestItem('Q2', ''))));
 
@@ -138,7 +146,7 @@ it('FR-032: the questions are headings of the chosen level, inside the summary, 
 
     expect(array_column(accordionTestItems($html), 'question'))->toBe(['H3', 'H3'])
         ->and($html)->toContain('<summary class="corex-accordion__summary"><h3 class="corex-accordion__question">Q1</h3><svg class="corex-accordion__icon"')
-        ->and(array_column(accordionTestItems(do_blocks(accordionTestBlock(accordionTestItem('Q', ''))))  , 'question'))->toBe(['SPAN']);
+        ->and(array_column(accordionTestItems(do_blocks(accordionTestBlock(accordionTestItem('Q', '')))), 'question'))->toBe(['SPAN']);
 });
 
 it('FR-039, TC-BLK-02-06: an accordion saved before the change keeps its questions and answers', function () {
@@ -182,4 +190,38 @@ it("FR-040: the FAQ pattern's questions are sample content: a visitor sees its h
     expect($html)->toContain('Frequently asked questions')
         ->and(accordionTestItems($html))->toBe([])
         ->and($html)->not->toContain('corex-accordion');
+});
+
+it("FR-040: the hidden sample accordion loads no style sheet for a visitor; an editor's page loads it", function () {
+    // WordPress (6.9 and later) takes back the assets a block enqueued when it prints nothing, which
+    // is what SampleBlocks makes of it for a visitor. This holds that in place for the FAQ.
+    $faq = array_column((new PatternLibrary())->patterns(), 'content', 'name')['corex/faq'];
+    $handles = WP_Block_Type_Registry::get_instance()->get_registered('corex/accordion')->style_handles;
+    $enqueued = static fn (): bool => array_filter($handles, static fn (string $handle): bool => wp_style_is($handle, 'enqueued')) !== [];
+    $reset = static function () use ($handles): void {
+        foreach ($handles as $handle) {
+            wp_dequeue_style($handle);
+        }
+    };
+
+    expect($handles)->not->toBe([]);
+
+    $reset();
+    wp_set_current_user(0);
+    do_blocks($faq);
+    $visitor = $enqueued();
+
+    $reset();
+    $administrators = get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID']);
+    wp_set_current_user((int) ($administrators[0] ?? 0));
+    try {
+        do_blocks($faq);
+        $editor = $enqueued();
+    } finally {
+        wp_set_current_user(0);
+        $reset();
+    }
+
+    expect($visitor)->toBeFalse()
+        ->and($editor)->toBeTrue();
 });

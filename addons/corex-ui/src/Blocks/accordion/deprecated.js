@@ -5,19 +5,44 @@
  * with old items and no inner blocks. Opening it in the editor turns each old item into an accordion
  * item with the same question, holding a paragraph with the old answer, and empties `items`; the page
  * draws it from `items` until then.
+ *
+ * `items` is the list of spec 029 (`[{title, content}]`) or, before it, text with one
+ * `Question | Answer` per line. WordPress drops that text on the page, since the attribute is a list;
+ * the editor reads it here, so opening such an accordion brings its questions back.
  */
 import { createBlock } from '@wordpress/blocks';
 import metadata from './block.json';
 
-const hasItems = ( items ) => Array.isArray( items ) && items.length > 0;
+/**
+ * @param {Array<Object>|string|undefined} raw The old `items`: a list, or one `Question | Answer` per line.
+ * @return {Array<{title: string, content: string}>} The old items, every line that says something.
+ */
+function itemsOf( raw ) {
+	if ( Array.isArray( raw ) ) {
+		return raw;
+	}
+	if ( typeof raw !== 'string' ) {
+		return [];
+	}
+
+	return raw
+		.split( /\r\n|\r|\n/ )
+		.map( ( line ) => line.trim() )
+		.filter( ( line ) => line !== '' )
+		.map( ( line ) => {
+			const [ title, ...answer ] = line.split( '|' );
+
+			return { title: title.trim(), content: answer.join( '|' ).trim() };
+		} );
+}
 
 /**
- * @param {Array<{title?: string, content?: string}>} items The old items.
+ * @param {Array<{title?: string, content?: string}>|string} items The old items.
  * @return {Array<Object>} One accordion item per old item, none left out; its answer as a
  *                         paragraph, or nothing when it had none.
  */
 export function itemsToBlocks( items ) {
-	return items.map( ( item ) => {
+	return itemsOf( items ).map( ( item ) => {
 		const answer = String( item?.content ?? '' );
 
 		return createBlock(
@@ -31,11 +56,15 @@ export function itemsToBlocks( items ) {
 }
 
 export const savedAsItems = {
-	attributes: metadata.attributes,
+	attributes: {
+		...metadata.attributes,
+		items: { ...metadata.attributes.items, type: [ 'array', 'string' ] },
+	},
 	supports: metadata.supports,
 	save: () => null,
 	isEligible: ( attributes, innerBlocks ) =>
-		hasItems( attributes.items ) && ( innerBlocks?.length ?? 0 ) === 0,
+		itemsOf( attributes.items ).length > 0 &&
+		( innerBlocks?.length ?? 0 ) === 0,
 	migrate: ( attributes ) => [
 		{ ...attributes, items: [] },
 		itemsToBlocks( attributes.items ),

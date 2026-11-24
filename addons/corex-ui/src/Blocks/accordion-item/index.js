@@ -52,6 +52,8 @@ function Edit( { attributes, setAttributes, context } ) {
 		<details { ...blockProps }>
 			<summary
 				className="corex-accordion__summary"
+				// The question's text field takes the focus; the summary is no stop of its own.
+				tabIndex={ -1 }
 				onClick={ keepOpen }
 				onKeyUp={ keepOpen }
 			>

@@ -6,6 +6,7 @@
 const fs = require( 'fs' );
 const path = require( 'path' );
 const {
+	CHILD_BLOCK,
 	formatTree,
 	isBlockClass,
 	normalizeTree,
@@ -133,6 +134,17 @@ function editorParityProblem( folder ) {
 	} );
 	const { tree, errors } = parityTree( markup, { prefix: fixture.prefix } );
 	const expected = normalizeTree( fixture.tree );
+	// The mark is the page side's, around each child block it draws; in the editor it would hide
+	// what it holds from the comparison.
+	if (
+		new globalThis.DOMParser()
+			.parseFromString( markup, 'text/html' )
+			.querySelector( `[${ CHILD_BLOCK }]` )
+	) {
+		errors.push(
+			`${ name }: its editor draws ${ CHILD_BLOCK }, the mark only the page side of the test puts around a child block`
+		);
+	}
 
 	if ( errors.length === 0 && json( tree ) === json( expected ) ) {
 		return '';

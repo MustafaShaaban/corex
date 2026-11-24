@@ -117,6 +117,19 @@ describe( 'FR-011: the parity tree', () => {
 		] );
 	} );
 
+	test( 'reports a child block drawn outside an element of the block, which holds nothing then', () => {
+		const { errors } = treeOf(
+			'<section class="corex-hero"><div class="layout">' +
+				'<div data-corex-parity-child><p>Text</p></div></div></section>' +
+				'<div data-corex-parity-child><p>Outside</p></div>'
+		);
+
+		expect( errors ).toEqual( [
+			'a child block (data-corex-parity-child) is drawn in a <div> that carries no class of the block corex-hero',
+			'a child block (data-corex-parity-child) is drawn in a <body> that carries no class of the block corex-hero',
+		] );
+	} );
+
 	test( 'removes the elements named in pageOnly, with what they hold', () => {
 		const { tree } = treeOf(
 			'<form class="corex-hero"><div class="corex-hero__trap"><input class="corex-hero__field" /></div>' +

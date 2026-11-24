@@ -92,10 +92,15 @@ to the wave's own entry when it is tagged from `release/gap-line`.
   level (2 to 6), which makes each question a heading of that level inside its `<summary>`; Chromium's tree
   then reads a heading inside a control announced as expanded or collapsed. Each question ends with the kit's
   chevron, pointing forward when closed and down when open, mirrored in Arabic, turned without a transition
-  under reduced motion; the browser's triangle is not drawn. An accordion saved before keeps its questions
-  and answers and is drawn from them in the new markup; opening it in the editor turns each one into an
-  accordion item holding a paragraph, losing none. The FAQ pattern now inserts an accordion with three
-  questions as headings 3, marked as sample content, so a visitor sees none until someone edits one. Both
+  under reduced motion; the browser's triangle is not drawn. A question whose answer is empty, or holds only
+  empty paragraphs (the one an item starts with, left blank), opens to nothing: no empty answer is printed.
+  An accordion saved before keeps its questions and answers and is drawn from them in the new markup;
+  opening it in the editor turns each one into an accordion item holding a paragraph, losing none. The
+  older shape, one `Question | Answer` per line of text (spec 029 replaced it in June), has printed nothing
+  since then, because WordPress drops text from a list attribute; it still prints nothing, and opening it in
+  the editor now turns its lines into accordion items too. The FAQ pattern now inserts an accordion with
+  three questions as headings 3, marked as sample content, so a visitor sees none until someone edits one,
+  and WordPress then loads no accordion style sheet for that visitor. Both
   blocks are `in-place` with a `parity.json`, and the accordion leaves the gate's waiting list. The parity
   standard now compares a block that holds blocks as its contract says: the page's side marks what each child
   block drew (`data-corex-parity-child`) and leaves it out, so the element that holds them is compared and the
@@ -269,9 +274,12 @@ to the wave's own entry when it is tagged from `release/gap-line`.
       they were. When an editor opens such a page, the accordion becomes accordion items; once the page is
       saved, each `<details>` also carries `wp-block-corex-accordion-item`, and each answer is a paragraph
       (`<p>`) inside its content `<div>` instead of bare text. A style or a script that matched the old
-      summary's text or the bare answer by exact strings needs a look. A page holding the FAQ pattern shows a
-      visitor what it showed before (its heading, no question); an editor sees three sample questions,
-      labelled, until one is edited.
+      summary's text or the bare answer by exact strings needs a look. A page that holds the FAQ pattern by
+      reference (`<!-- wp:pattern {"slug":"corex/faq"} /-->`, as the Company kit places it) shows a visitor
+      what it showed before (its heading, no question), and an editor sees three sample questions, labelled,
+      until one is edited. Where the pattern was inserted by hand, the page holds the bare
+      `<!-- wp:corex/accordion /-->` it inserted then: it prints nothing on the page, as before, and shows
+      one empty item in the editor, waiting for a question.
     - **Mizzey** is not on this line.
   - **Spec 137 slice 1 (G-013).** No upgrade step, no stored data changed.
     - **Muva** runs its own theme, which ships no `corex-navigation-collapse.css`, so the breakpoint writer does

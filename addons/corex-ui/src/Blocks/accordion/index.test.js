@@ -207,8 +207,56 @@ describe( 'FR-039: an accordion saved in the old shape migrates when opened', ()
 
 	test( 'saved nothing, as the old block did, with the same attributes and supports', () => {
 		expect( legacy.save() ).toBeNull();
-		expect( legacy.attributes.items ).toEqual( metadata.attributes.items );
+		// The items as a list, or as the text of the shape before spec 029.
+		expect( legacy.attributes.items ).toEqual( {
+			...metadata.attributes.items,
+			type: [ 'array', 'string' ],
+		} );
+		expect( legacy.attributes.oneOpen ).toEqual(
+			metadata.attributes.oneOpen
+		);
 		expect( legacy.supports ).toEqual( metadata.supports );
+	} );
+
+	test( 'the shape before spec 029, one "Question | Answer" per line, is eligible and migrates too', () => {
+		const text =
+			'What is CoreX? | A framework.\n\n  Title only  \r\n | No question';
+
+		expect( legacy.isEligible( { items: text }, [] ) ).toBe( true );
+		expect( legacy.isEligible( { items: '  \n ' }, [] ) ).toBe( false );
+		expect( legacy.migrate( { items: text } ) ).toEqual( [
+			{ items: [] },
+			[
+				{
+					name: 'corex/accordion-item',
+					attributes: { question: 'What is CoreX?' },
+					innerBlocks: [
+						{
+							name: 'core/paragraph',
+							attributes: { content: 'A framework.' },
+							innerBlocks: [],
+						},
+					],
+				},
+				{
+					name: 'corex/accordion-item',
+					attributes: { question: 'Title only' },
+					innerBlocks: [],
+				},
+				// A line with no question keeps its answer; the page skips it until one is typed.
+				{
+					name: 'corex/accordion-item',
+					attributes: { question: '' },
+					innerBlocks: [
+						{
+							name: 'core/paragraph',
+							attributes: { content: 'No question' },
+							innerBlocks: [],
+						},
+					],
+				},
+			],
+		] );
 	} );
 
 	test( 'turns each old item into an accordion item holding a paragraph, losing no question or answer', () => {

@@ -66,6 +66,27 @@ it('FR-030: an item with no question prints nothing; one with no answer prints n
         ->and($renderer->render(['question' => 'Q'], "\n", accordionBlock()))->toBe(accordionItemHtml('Q'));
 });
 
+it('FR-030: an answer made only of empty paragraphs is no answer, so the item opens to no empty strip', function (string $answer) {
+    $renderer = new AccordionItemRenderer(new AccordionItemMarkup());
+
+    expect($renderer->render(['question' => 'Q'], $answer, accordionBlock()))->toBe(accordionItemHtml('Q'));
+})->with([
+    'an empty paragraph' => ['<p></p>'],
+    'one with a class, around new lines' => ["\n<p class=\"wp-block-paragraph\"></p>\n"],
+    'spaces and a no-break space' => ['<p> &nbsp; </p><p>&#160;</p>'],
+    'a no-break space as a character' => ["<p>\u{00A0}</p>"],
+    'a line break alone' => ['<p><br></p>'],
+]);
+
+it('FR-030: an answer with text in any paragraph, or another block, is kept', function () {
+    $renderer = new AccordionItemRenderer(new AccordionItemMarkup());
+
+    expect($renderer->render(['question' => 'Q'], '<p></p><p>Yes.</p>', accordionBlock()))
+        ->toBe(accordionItemHtml('Q', '<p></p><p>Yes.</p>'))
+        ->and($renderer->render(['question' => 'Q'], '<p></p><figure><img src="a.jpg" alt="A"></figure>', accordionBlock()))
+        ->toBe(accordionItemHtml('Q', '<p></p><figure><img src="a.jpg" alt="A"></figure>'));
+});
+
 it("FR-032: an item's question is a heading of the accordion's level, plain text by default or out of range", function () {
     $renderer = new AccordionItemRenderer(new AccordionItemMarkup());
     $at = static fn (mixed $level): string => $renderer->render(

@@ -140,7 +140,9 @@ An `in-place` block keeps a `parity.json` beside its `block.json`:
   wraps what each one drew in an element marked `data-corex-parity-child`, which the tree leaves
   out with what it holds; the editor's stand-ins draw the holder empty. So the holder (the
   accordion's root, a tab's panel) is in the tree on both sides, and a child's elements are in
-  neither, even when they carry the parent's prefix.
+  neither, even when they carry the parent's prefix. A child that drew nothing gets no mark. A
+  marked child whose parent element carries no class of the block fails (a child printed outside
+  its holder), and so does an editor that draws the mark itself.
 - `context` (optional): the block context the block is drawn in, as a parent gives it to a child
   block (`{ "corex/accordionHeadingLevel": 3 }`). The editor gets it in `props.context`; the page
   gets it through WordPress's `render_block_context`.

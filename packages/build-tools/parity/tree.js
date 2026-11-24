@@ -10,7 +10,8 @@
  * `data-corex-parity-child` is what a child block drew, and is skipped with everything inside it:
  * where a block holds blocks, the element that holds them is compared, and what the child blocks
  * draw is compared through their own fixtures. The page's side of the test puts the mark around
- * each child block; the editor's stand-ins draw no child block at all.
+ * each child block; the editor's stand-ins draw no child block at all. A marked child whose parent
+ * element carries no class of the block is reported: a child printed outside its holder.
  *
  * The PHP twin is `tests/Support/ParityTree.php`; the two must compute the same tree.
  *
@@ -70,6 +71,15 @@ function nodeFor( element, context ) {
 	}
 
 	if ( element.hasAttribute( CHILD_BLOCK ) ) {
+		// The element that holds a child block is the block's own: one drawn outside it fails.
+		const parent = element.parentElement;
+		if ( ! parent || blockClassesOf( parent, prefix ).length === 0 ) {
+			errors.push(
+				`a child block (${ CHILD_BLOCK }) is drawn in a <${ (
+					parent?.tagName ?? 'document'
+				).toLowerCase() }> that carries no class of the block ${ prefix }`
+			);
+		}
 		return [];
 	}
 

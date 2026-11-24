@@ -17,20 +17,32 @@ beforeEach(function () {
     $this->catalog = new DesignSystemCatalog();
 });
 
-function corexUiRegisteredBlocks(): array
+/**
+ * The corex-ui blocks, as their block.json files name them. A child block (one whose block.json names
+ * a `parent`, such as `corex/accordion-item`) is part of its parent's entry, not one of its own: it
+ * is listed only with `$children`.
+ *
+ * @return list<string>
+ */
+function corexUiRegisteredBlocks(bool $children = false): array
 {
     $blocksDir = dirname(__DIR__, 3) . '/addons/corex-ui/src/Blocks';
     $names     = [];
 
     foreach (glob($blocksDir . '/*/block.json') ?: [] as $file) {
         $json = json_decode((string) file_get_contents($file), true);
-        if (is_array($json) && isset($json['name'])) {
+        if (is_array($json) && isset($json['name']) && $children === ! empty($json['parent'])) {
             $names[] = (string) $json['name'];
         }
     }
 
     return $names;
 }
+
+it('lists no child block as an entry of its own: it is part of its parent (spec 136)', function () {
+    expect(corexUiRegisteredBlocks(true))->toContain('corex/accordion-item')
+        ->and(array_intersect($this->catalog->blockNames(), corexUiRegisteredBlocks(true)))->toBe([]);
+});
 
 it('organizes the UI into the six taxonomy categories', function () {
     foreach ([

@@ -192,6 +192,20 @@ it('FR-011: skips what a child block draws (data-corex-parity-child) and keeps t
         ]);
 });
 
+it('FR-011: reports a child block drawn outside an element of the block, which holds nothing then', function () {
+    $result = ParityTree::fromMarkup(
+        '<section class="corex-hero"><div class="layout">'
+        . '<div data-corex-parity-child><p>Text</p></div></div></section>'
+        . '<div data-corex-parity-child><p>Outside</p></div>',
+        'corex-hero',
+    );
+
+    expect($result['errors'])->toBe([
+        'a child block (data-corex-parity-child) is drawn in a <div> that carries no class of the block corex-hero',
+        'a child block (data-corex-parity-child) is drawn in a <body> that carries no class of the block corex-hero',
+    ]);
+});
+
 it('FR-012: a pageOnly class that is a class of the block fails, naming the block', function () {
     expect(ParityTree::fixtureProblems('corex/hero', [
         'prefix' => 'corex-hero',

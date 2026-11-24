@@ -211,4 +211,20 @@ describe( 'FR-012: a block that holds blocks, drawn by the editor', () => {
 			'corex/probe-orphan: the first root of parity.json does not carry the prefix class corex-probe'
 		);
 	} );
+
+	test( "an editor that draws the page side's child mark fails: the mark would hide what it holds", () => {
+		const problem = probe(
+			{ name: 'corex/probe-marked' },
+			"return h( 'div', editor.useBlockProps( { className: 'corex-probe' } ), " +
+				"h( 'div', { 'data-corex-parity-child': '' }, h( 'p', { className: 'corex-probe__text' } ) ) );",
+			{
+				prefix: 'corex-probe',
+				tree: [ { tag: 'div', classes: [ 'corex-probe' ] } ],
+			}
+		);
+
+		expect( problem ).toContain(
+			'corex/probe-marked: its editor draws data-corex-parity-child, the mark only the page side of the test puts around a child block'
+		);
+	} );
 } );

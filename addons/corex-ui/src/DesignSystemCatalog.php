@@ -82,9 +82,8 @@ final class DesignSystemCatalog
         'stat'        => 'Stat',
         'testimonial' => 'Testimonial',
         'pricing'     => 'Pricing',
+        // Its child block, `corex/accordion-item`, is part of this entry (spec 136, FR-030).
         'accordion'   => 'Accordion',
-        // The accordion's child block: one question and its answer (spec 136, FR-030).
-        'accordion-item' => 'Accordion item',
         'tabs'        => 'Tabs',
         'team'        => 'Team',
         'gallery'     => 'Gallery',
